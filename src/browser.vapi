@@ -24,7 +24,8 @@ namespace NativeWeb
   public class Browser : GLib.Object, GLib.Initable
     {
       public string app_prefix { get; set; }
-      public Browser (GLib.Cancellable? cancellable = null) throws GLib.Error;
+      public string extension_dir { get; construct; }
+      public Browser (string? extension_dir, GLib.Cancellable? cancellable = null) throws GLib.Error;
       public void add_alias (string alias, string value);
       public void add_user_message_handler (Ipc.Handler handler, string name, [CCode (type = "const GVariantType*")] GLib.VariantType? param_types = null);
       public void remove_user_message_handler (string name);

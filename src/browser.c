@@ -245,9 +245,10 @@ static void nw_browser_class_init (NWBrowserClass* klass)
   G_OBJECT_CLASS (klass)->set_property = nw_browser_class_set_property;
 
   const GParamFlags flags1 = G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS;
+  const GParamFlags flags2 = G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS;
 
   properties [prop_app_prefix] = g_param_spec_string ("app-prefix", "app-prefix", "app-prefix", NULL, flags1);
-  properties [prop_extension_dir] = g_param_spec_string ("extension-dir", "extension-dir", "extension-dir", NULL, flags1);
+  properties [prop_extension_dir] = g_param_spec_string ("extension-dir", "extension-dir", "extension-dir", NULL, flags2);
   g_object_class_install_properties (G_OBJECT_CLASS (klass), prop_number, properties);
 }
 

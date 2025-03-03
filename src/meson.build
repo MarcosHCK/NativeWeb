@@ -19,7 +19,7 @@ subdir ('resources')
 
 libnativeweb = library \
   (
-    'webapp',
+    'nativeweb',
     c_args: [ '-DG_LOG_DOMAIN="NativeWeb"', '-DG_LOG_USE_STRUCTURED=1' ],
     dependencies: [ config_dep, ipclib_valadep, libgtk4_dep, libwebkitgtk_dep,
       libresources_dep.as_link_whole () ],
