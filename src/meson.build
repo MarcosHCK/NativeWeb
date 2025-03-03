@@ -15,6 +15,7 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
+subdir ('extension')
 subdir ('resources')
 
 libnativeweb = library \

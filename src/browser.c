@@ -127,7 +127,7 @@ static void nw_browser_class_set_property (GObject* pself, guint property_id, co
     {
       case prop_app_prefix: nw_browser_set_app_prefix ((NWBrowser*) pself, g_value_get_string (value)); break;
       case prop_extension_dir: _g_free0 (self->extension_dir);
-                               if (g_value_get_string (value) == NULL)
+                               if (g_value_get_string (value) != NULL)
                                   self->extension_dir = g_value_dup_string (value);
         break;
       default: G_OBJECT_WARN_INVALID_PROPERTY_ID (pself, property_id, pspec);
