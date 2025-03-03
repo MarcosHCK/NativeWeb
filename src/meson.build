@@ -17,18 +17,28 @@
 
 subdir ('resources')
 
-libwebapp = library \
+libnativeweb = library \
   (
     'webapp',
     c_args: [ '-DG_LOG_DOMAIN="NativeWeb"', '-DG_LOG_USE_STRUCTURED=1' ],
-    dependencies: [ config_dep, ipclib_valadep, libgtk4_dep, libresources_dep, libwebkitgtk_dep ],
+    dependencies: [ config_dep, ipclib_valadep, libgtk4_dep, libwebkitgtk_dep,
+      libresources_dep.as_link_whole () ],
     sources: [ 'browser.c', 'browser.h', 'browser.vapi', 'hubwindow.vala', 'message.vala' ],
   )
 
-libwebapp_dep = declare_dependency \
+libnativeweb_dep = declare_dependency \
   (
     dependencies: [ ipclib_valadep, libgtk4_dep, libwebkitgtk_dep ],
     include_directories: include_directories ('.'),
-    link_with: libwebapp,
+    link_with: libnativeweb,
     sources: 'browser.vapi',
   )
+
+libnativeweb_valadep = declare_dependency \
+  (
+    dependencies: libnativeweb_dep,
+    sources: 'browser.vapi',
+  )
+
+meson.override_dependency ('nativeweb', libnativeweb_dep)
+meson.override_dependency ('nativeweb-vala', libnativeweb_valadep)
