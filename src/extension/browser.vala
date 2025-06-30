@@ -45,15 +45,7 @@ namespace NativeWeb
 
       private bool on_user_message_received (WebKit.UserMessage user_message)
         {
-          string signal_name;
-
-          switch (signal_name = user_message.name)
-            {
-              case "onclose": recv_signal ("OnClose", user_message.parameters);
-                break;
-              default: return false;
-            }
-
+          recv_signal (user_message.name, user_message.parameters);
           return on_user_message_received_reply (user_message, true);
         }
 
@@ -86,6 +78,42 @@ namespace NativeWeb
                       p.resolve (new JSC.Value.boolean (p.context, v.get_child_value (0).get_boolean ()));
                 })), typeof (JSC.Value));
 
+          klass.add_method ("drag", (s, a) =>
+          
+            Promise.create (JSC.Context.get_current (), p =>
+
+              ((BrowserNamespace) s).invoke.begin ("drag", params_pack (a, "(b)"), (o, res) =>
+                {
+                  GLib.Variant v;
+                  try { v = ((BrowserNamespace) o).invoke.end (res); } catch (GLib.Error e)
+                    { p.reject_gerror ((owned) e); return; }
+                      p.resolve (new JSC.Value.boolean (p.context, v.get_child_value (0).get_boolean ()));
+                })), typeof (JSC.Value));
+
+          klass.add_method ("maximize", (s, a) =>
+          
+            Promise.create (JSC.Context.get_current (), p =>
+
+              ((BrowserNamespace) s).invoke.begin ("maximize", params_pack (a, "(mb)"), (o, res) =>
+                {
+                  GLib.Variant v;
+                  try { v = ((BrowserNamespace) o).invoke.end (res); } catch (GLib.Error e)
+                    { p.reject_gerror ((owned) e); return; }
+                      p.resolve (new JSC.Value.boolean (p.context, v.get_child_value (0).get_boolean ()));
+                })), typeof (JSC.Value));
+
+          klass.add_method ("minimize", (s, a) =>
+          
+            Promise.create (JSC.Context.get_current (), p =>
+
+              ((BrowserNamespace) s).invoke.begin ("minimize", params_pack (a, "(mb)"), (o, res) =>
+                {
+                  GLib.Variant v;
+                  try { v = ((BrowserNamespace) o).invoke.end (res); } catch (GLib.Error e)
+                    { p.reject_gerror ((owned) e); return; }
+                      p.resolve (new JSC.Value.boolean (p.context, v.get_child_value (0).get_boolean ()));
+                })), typeof (JSC.Value));
+
           klass.add_method ("open", (s, a) =>
           
             Promise.create (JSC.Context.get_current (), p =>
@@ -110,8 +138,9 @@ namespace NativeWeb
                       p.resolve (new JSC.Value.boolean (p.context, v.get_child_value (0).get_boolean ()));
                 })), typeof (JSC.Value));
 
-          prepare_signals (klass);
-          register_signal (klass, "onClose", "OnClose");
+          (ISignalable).prepare (klass);
+          (ISignalable).register (klass, "onClose", "OnClose");
+          (ISignalable).register (klass, "maximized", "Maximized");
 
           context.set_value ("browser", new JSC.Value.object (context, (void*) (owned) instance, klass));
         return (owned) klass;

@@ -19,29 +19,16 @@
 namespace NativeWeb
 {
 
-  public abstract class BaseJscClass : GLib.Object, IInvocable, ISignalable
+  public interface IInvocable : GLib.Object
     {
 
-      public string header { get; protected set; }
-      public Extension extension { get { return Extension.get_default (); } }
-
-      construct
+      protected async GLib.Variant? invoke (string method, GLib.Variant? parameters) throws GLib.Error
         {
-          header = _G_TYPE_FROM_INSTANCE ().name ();
-          extension.recv_message.connect (on_recv_message);
+          var _params = parameters ?? new GLib.Variant.tuple ({ });
+          var _message = Ipc.call_pack (method, _params);
+          return yield send (_message);
         }
 
-      [CCode (cheader_filename = "glib.h", cname = "G_TYPE_FROM_INSTANCE")]
-      private extern GLib.Type _G_TYPE_FROM_INSTANCE ();
-
-      private void on_recv_message (string name, GLib.Variant message)
-        {
-          if (name == _header) consume (message);
-        }
-
-      protected async GLib.Variant? send (GLib.Variant _message) throws GLib.Error
-        {
-          return yield extension.send_message (_header, _message);
-        }
+      public abstract async GLib.Variant? send (GLib.Variant _message) throws GLib.Error;
     }
 }

@@ -49,6 +49,14 @@ namespace NativeWeb
             });
         }
 
+      public void consume (GLib.Variant message)
+        {
+          GLib.Variant _params;
+          string signal_name = Ipc.call_unpack (message, out _params);
+
+          recv_signal (signal_name, _params);
+        }
+
       private static ulong on_signal_connect (GenericArray<JSC.Value> a, SignalConnector connector)
         {
           ulong id = 0;
@@ -60,7 +68,7 @@ namespace NativeWeb
         return id;
         }
 
-      protected static void prepare_signals (JSC.Class klass)
+      protected static void prepare (JSC.Class klass)
         {
           var klass_name = klass.name;
 
@@ -70,14 +78,14 @@ namespace NativeWeb
 
                 JSC.Context.get_current ().throw (@"$(klass_name).disconnect must receive a callable argument");
               else
-                ((ISignalable) s).remove_signal_handler ((ulong) a [0].to_double ());
+                ((ISignalable) s).remove_handler ((ulong) a [0].to_double ());
               return null;
             }, Type.NONE);
         }
 
       [HasEmitter] public signal void recv_signal (string signal_name, GLib.Variant _params);
 
-      protected static void register_signal (JSC.Class klass, string field_name, string signal_name)
+      protected static void register (JSC.Class klass, string field_name, string signal_name)
         {
           var property_type = typeof (JSC.Value);
 
@@ -96,7 +104,7 @@ namespace NativeWeb
             }, null);
         }
 
-      private void remove_signal_handler (ulong handler_id)
+      private void remove_handler (ulong handler_id)
         {
           disconnect (handler_id);
         }

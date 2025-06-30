@@ -81,7 +81,7 @@ static GVariant* pack_param (JSCValue* param, const GVariantType* variant_type)
           GVariant* variant;
           const GVariantType* child_type = g_variant_type_element (variant_type);
 
-          if (jsc_value_is_nil (param))
+          if (param == NULL || jsc_value_is_undefined (param))
 
             variant = g_variant_new_maybe (child_type, NULL);
           else
@@ -198,10 +198,23 @@ GVariant* _nw_extension_params_pack (GPtrArray* params, const GVariantType* vari
   GVariantBuilder builder = G_VARIANT_BUILDER_INIT (variant_type);
   const GVariantType* item = NULL;
   guint i;
+  JSCValue* param = NULL;
 
   for (i = 0, item = g_variant_type_first (variant_type); item != NULL; ++i, item = g_variant_type_next (item))
     {
-      JSCValue* param = (JSCValue*) params->pdata [i];
+
+      if (i < params->len)
+
+        param = (JSCValue*) params->pdata [i];
+      else
+        {
+          if (g_variant_type_is_maybe (item))
+
+            param = NULL;
+          else
+            g_error ("more values expected (got %u, expected %u)", params->len, (guint) g_variant_type_n_items (variant_type));
+        }
+
       g_variant_builder_add_value (&builder, pack_param (param, item));
     }
   return g_variant_builder_end (&builder);

@@ -18,13 +18,17 @@
 subdir ('extension')
 subdir ('resources')
 
+supports = files ('delayed.vala', 'dragger.vala')
+widgets = files ('headerbar.vala', 'message.vala', 'window.vala')
+
 libnativeweb = library \
   (
     'nativeweb',
     c_args: [ '-DG_LOG_DOMAIN="NativeWeb"', '-DG_LOG_USE_STRUCTURED=1' ],
     dependencies: [ config_dep, ipclib_valadep, libgtk4_dep, libwebkitgtk_dep,
+      cc.find_library ('m', required: false),
       libresources_dep.as_link_whole () ],
-    sources: [ 'browser.c', 'browser.h', 'browser.vapi', 'hubwindow.vala', 'message.vala' ],
+    sources: [ 'browser.c', 'browser.h', 'browser.vapi', supports, widgets ],
   )
 
 libnativeweb_dep = declare_dependency \

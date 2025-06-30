@@ -19,14 +19,16 @@
 namespace NativeWeb
 {
 
-  [GtkTemplate (ui = "/org/hck/nativeweb/gtk/hubwindow.ui")]
+  [GtkTemplate (ui = "/org/hck/nativeweb/gtk/window.ui")]
 
-  public class HubWindow : Gtk.ApplicationWindow
+  public class Window : Gtk.ApplicationWindow
     {
 
       public NativeWeb.Browser browser { get; construct; }
+      private Dragger dragger = new Dragger ();
+      private HeaderBar? header_bar = null;
       public WebKit.WebView webview { get; private set; }
-      [GtkChild] private unowned Gtk.MenuButton? menubutton1 = null;
+      public bool with_titlebar { construct; default = true; }
 
       construct
         {
@@ -40,39 +42,43 @@ namespace NativeWeb
           webview.web_process_terminated.connect (on_web_process_terminated);
           set_child (webview);
 
-          notify ["application"].connect (() =>
+          if (_with_titlebar)
+
+            set_titlebar (header_bar = new HeaderBar ());
+          else
             {
-              icon_name = application?.application_id;
-              menubutton1.menu_model = application?.menubar;
-            });
+              var bar = new Gtk.HeaderBar ();
+
+              bar.show_title_buttons = false;
+              bar.visible = false;
+              set_titlebar (bar);
+            }
+
+          notify ["application"].connect (on_notify_application);
+          notify ["maximized"].connect (on_notify_maximized);
+
+          ((Gtk.Widget) this).add_controller (dragger.controller);
         }
 
-      public HubWindow (Gtk.Application application, NativeWeb.Browser browser)
+      public Window (Gtk.Application application, NativeWeb.Browser browser)
         {
-          Object (application: application, browser: browser);
+          Object (application: application, browser: browser, with_titlebar: true);
+        }
+
+      public Window.without_titlebar (Gtk.Application application, NativeWeb.Browser browser)
+        {
+          Object (application: application, browser: browser, with_titlebar: false);
         }
 
       public override bool close_request ()
         {
           if (webview == null) return false;
           var parameters = new GLib.Variant.tuple ({ });
-          var message = new WebKit.UserMessage ("onclose", parameters);
+          var message = new WebKit.UserMessage ("OnClose", parameters);
 
           visible = false;
-          webview.send_message_to_page.begin (message, null, (o, res) =>
-            {
-              try { ((WebKit.WebView) o).send_message_to_page.end (res); } catch (GLib.Error e)
-                {
-                  unowned var code = e.code;
-                  unowned var domain = e.domain.to_string ();
-                  unowned var message_ = e.message.to_string ();
-
-                  critical ("error sending close notification: %s: %u: %s", domain, code, message_);
-                }
-
-              webview = null;
-              close ();
-            });
+          webview.send_message_to_page.begin (message, null, (o, res) => {
+            notify_finish (o, res); webview = null; close (); });
           return true;
         }
 
@@ -80,6 +86,24 @@ namespace NativeWeb
         {
           webview.load_uri (uri);
           return true;
+        }
+
+      private void notify_page (WebKit.UserMessage message) requires (webview != null)
+        {
+          webview.send_message_to_page.begin (message, null, notify_finish);
+        }
+
+      static void notify_finish (GLib.Object? o, GLib.AsyncResult res)
+        {
+
+          try { ((WebKit.WebView) o).send_message_to_page.end (res); } catch (GLib.Error e)
+            {
+              unowned var code = e.code;
+              unowned var domain = e.domain.to_string ();
+              unowned var message_ = e.message.to_string ();
+
+              critical ("error sending notification: %s: %u: %s", domain, code, message_);
+            }
         }
 
       private bool on_decide_policy (WebKit.WebView webview, WebKit.PolicyDecision decision_, WebKit.PolicyDecisionType type)
@@ -163,6 +187,21 @@ namespace NativeWeb
           return true;
         }
 
+      private void on_notify_application ()
+        {
+          icon_name = application?.application_id;
+          if (null != header_bar)
+          header_bar.menu_model = application?.menubar;
+        }
+
+      private void on_notify_maximized ()
+        {
+          if (webview == null) return;
+          var parameters = new GLib.Variant ("(b)", maximized);
+          var message = new WebKit.UserMessage ("Maximized", parameters);
+          notify_page (message);
+        }
+
       private bool on_permission_request (WebKit.WebView webview, WebKit.PermissionRequest request)
         {
           request.deny ();
@@ -180,6 +219,38 @@ namespace NativeWeb
             case "close":
 
               close ();
+              break;
+
+            case "drag":
+
+              bool value = false;
+              message.parameters.get ("(b)", &value);
+
+              dragger.drag = value;
+
+              result = new GLib.Variant.boolean (true);
+              break;
+
+            case "maximize":
+
+              bool abs = false, value = false;
+              message.parameters.get ("(mb)", &abs, &value);
+
+              if (abs ? value : !( Gdk.ToplevelState.MAXIMIZED in (get_native ()?.get_surface () as Gdk.Toplevel)?.state))
+                maximize (); else unmaximize ();
+
+              result = new GLib.Variant.boolean (true);
+              break;
+
+            case "minimize":
+
+              bool abs = false, value = false;
+              message.parameters.get ("(mb)", &abs, &value);
+
+              if (abs ? value : !( Gdk.ToplevelState.MINIMIZED in (get_native ()?.get_surface () as Gdk.Toplevel)?.state))
+                minimize (); else unminimize ();
+
+              result = new GLib.Variant.boolean (true);
               break;
 
             case "open":
