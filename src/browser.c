@@ -294,6 +294,8 @@ static gboolean nw_browser_g_initable_iface_init (GInitable* pself, GCancellable
 
   self->context = g_object_new (WEBKIT_TYPE_WEB_CONTEXT, NULL);
 
+  on_initialize_web_extensions (self->context, self);
+
   g_signal_connect (self->context, "initialize-web-process-extensions", G_CALLBACK (on_initialize_web_extensions), self);
   g_signal_connect (self->context, "user-message-received", G_CALLBACK (on_user_message_received), self);
 
