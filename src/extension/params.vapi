@@ -18,8 +18,12 @@
 
 namespace NativeWeb
 {
+  [CCode (cheader_filename = "params.h", cname = "_nw_extension_param_pack", returns_floating_reference = true)]
+  internal static extern GLib.Variant? param_pack (JSC.Value param, [CCode (type = "const GVariantType*")] string? variant_type);
   [CCode (cheader_filename = "params.h", cname = "_nw_extension_params_pack", returns_floating_reference = true)]
   internal static extern GLib.Variant? params_pack (GLib.GenericArray<JSC.Value> @params, [CCode (type = "const GVariantType*")] string? variant_type);
+  [CCode (cheader_filename = "params.h", cname = "_nw_extension_param_unpack")]
+  internal static extern JSC.Value param_unpack (GLib.Variant param, JSC.Context context);
   [CCode (cheader_filename = "params.h", cname = "_nw_extension_params_unpack")]
   internal static extern GLib.GenericArray<JSC.Value> params_unpack (GLib.Variant @params, JSC.Context context);
 }

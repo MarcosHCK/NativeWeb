@@ -33,10 +33,9 @@
     || jsc_value_is_undefined (__value); \
   }))
 
-static GVariant* pack_param (JSCValue* param, const GVariantType* variant_type);
 static GVariant* pack_typearray (JSCValue* param, const GVariantType* variant_type);
 
-static GVariant* pack_param (JSCValue* param, const GVariantType* variant_type)
+GVariant* _nw_extension_param_pack (JSCValue* param, const GVariantType* variant_type)
 {
   switch (g_variant_type_peek_string (variant_type) [0])
     {
@@ -69,7 +68,7 @@ static GVariant* pack_param (JSCValue* param, const GVariantType* variant_type)
               for (i = 0; i < length; ++i)
                 {
                   child = jsc_value_object_get_property_at_index (param, i);
-                  g_variant_builder_add_value (&builder, pack_param (child, child_type));
+                  g_variant_builder_add_value (&builder, _nw_extension_param_pack (child, child_type));
                 }
               variant = g_variant_builder_end (&builder);
             }
@@ -85,7 +84,7 @@ static GVariant* pack_param (JSCValue* param, const GVariantType* variant_type)
 
             variant = g_variant_new_maybe (child_type, NULL);
           else
-            variant = g_variant_new_maybe (child_type, pack_param (param, child_type));
+            variant = g_variant_new_maybe (child_type, _nw_extension_param_pack (param, child_type));
 
           return variant;
         }
@@ -215,9 +214,61 @@ GVariant* _nw_extension_params_pack (GPtrArray* params, const GVariantType* vari
             g_error ("more values expected (got %u, expected %u)", params->len, (guint) g_variant_type_n_items (variant_type));
         }
 
-      g_variant_builder_add_value (&builder, pack_param (param, item));
+      g_variant_builder_add_value (&builder, _nw_extension_param_pack (param, item));
     }
   return g_variant_builder_end (&builder);
+}
+
+JSCValue* _nw_extension_param_unpack (GVariant* param, JSCContext* context)
+{
+  gchar* vtype = NULL;
+
+  do { switch ((vtype = g_variant_get_type_string (param)) [0])
+    {
+
+      case 'v':
+        {
+          GVariant* old = param;
+          param = g_variant_get_variant (param);
+
+          g_variant_unref (old);
+          continue;
+        }
+
+      case 'a': G_GNUC_FALLTHROUGH; case '(':
+        {
+          GPtrArray* inner = _nw_extension_params_unpack (param, context);
+          JSCValue* value = jsc_value_new_array_from_garray (context, inner);
+          return value;
+        }
+
+      case 'm':
+        {
+          GVariant* new;
+
+          if ((new = g_variant_get_maybe (param)) != NULL)
+
+            { param = new; continue; }
+          else
+            { return jsc_value_new_null (context); }
+        }
+
+      case 'b': return jsc_value_new_boolean (context, g_variant_get_boolean (param));
+      case 'y': return jsc_value_new_number (context, (double) g_variant_get_byte (param));
+      case 'n': return jsc_value_new_number (context, (double) g_variant_get_int16 (param));
+      case 'q': return jsc_value_new_number (context, (double) g_variant_get_uint16 (param));
+      case 'i': return jsc_value_new_number (context, (double) g_variant_get_int32 (param));
+      case 'u': return jsc_value_new_number (context, (double) g_variant_get_uint32 (param));
+      case 'x': return jsc_value_new_number (context, (double) g_variant_get_int64 (param));
+      case 't': return jsc_value_new_number (context, (double) g_variant_get_uint64 (param));
+      case 'h': return jsc_value_new_number (context, (double) g_variant_get_int32 (param));
+      case 'd': return jsc_value_new_number (context, (double) g_variant_get_double (param));
+      case 's': G_GNUC_FALLTHROUGH;
+      case 'o': G_GNUC_FALLTHROUGH;
+      case 'g': return jsc_value_new_string (context, g_variant_get_string (param, NULL));
+      default: g_error ("unknown conversion from variant type %s", (gchar*) g_variant_get_type (param));
+    }
+  break; } while (TRUE);
 }
 
 GPtrArray* _nw_extension_params_unpack (GVariant* params, JSCContext* context)
@@ -238,63 +289,8 @@ GPtrArray* _nw_extension_params_unpack (GVariant* params, JSCContext* context)
   for (; (child = g_variant_iter_next_value (&iter)) != NULL;)
     {
 
-      do { switch (g_variant_get_type_string (child) [0])
-        {
-
-          case 'v':
-            {
-              GVariant* old = child;
-              child = g_variant_get_variant (child);
-
-              g_variant_unref (old);
-              continue;
-            }
-
-          case 'a': G_GNUC_FALLTHROUGH; case '(':
-            {
-              GPtrArray* inner = _nw_extension_params_unpack (child, context);
-              JSCValue* value = jsc_value_new_array_from_garray (context, inner);
-
-              g_ptr_array_add (values, value);
-              g_ptr_array_unref (inner);
-              break;
-            }
-
-          case 'm':
-            {
-              GVariant* new;
-              if ((new = g_variant_get_maybe (child)) == NULL)
-
-                g_ptr_array_add (values, jsc_value_new_null (context));
-              else
-                {
-                  g_variant_unref (child);
-                  child = new;
-                  continue;
-                }
-              break;
-            }
-
-          case 'b': g_ptr_array_add (values, jsc_value_new_boolean (context, g_variant_get_boolean (child))); break;
-          case 'y': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_byte (child))); break;
-          case 'n': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_int16 (child))); break;
-          case 'q': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_uint16 (child))); break;
-          case 'i': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_int32 (child))); break;
-          case 'u': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_uint32 (child))); break;
-          case 'x': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_int64 (child))); break;
-          case 't': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_uint64 (child))); break;
-          case 'h': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_int32 (child))); break;
-          case 'd': g_ptr_array_add (values, jsc_value_new_number (context, (double) g_variant_get_double (child))); break;
-          case 's': G_GNUC_FALLTHROUGH;
-          case 'o': G_GNUC_FALLTHROUGH;
-          case 'g': g_ptr_array_add (values, jsc_value_new_string (context, g_variant_get_string (child, NULL))); break;
-          default: g_error ("unknown conversion from variant type %s", (gchar*) g_variant_get_type (child));
-        }
-          break;
-        }
-      while (TRUE);
-
+      g_ptr_array_add (values, _nw_extension_param_unpack (child, context));
       g_variant_unref (child);
     }
-  return values;
+return values;
 }

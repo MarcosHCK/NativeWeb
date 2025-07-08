@@ -23,7 +23,9 @@
 extern "C" {
 #endif // __cplusplus
 
+  G_GNUC_INTERNAL GVariant* _nw_extension_param_pack (JSCValue* param, const GVariantType* variant_type);
   G_GNUC_INTERNAL GVariant* _nw_extension_params_pack (GPtrArray* params, const GVariantType* variant_type);
+  G_GNUC_INTERNAL JSCValue* _nw_extension_param_unpack (GVariant* param, JSCContext* context);
   G_GNUC_INTERNAL GPtrArray* _nw_extension_params_unpack (GVariant* params, JSCContext* context);
 
 #if __cplusplus

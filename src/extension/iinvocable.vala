@@ -22,6 +22,26 @@ namespace NativeWeb
   public interface IInvocable : GLib.Object
     {
 
+      public static GLib.Variant? collect_arg (JSC.Value param, [CCode (type = "const GVariantType*")] string? variant_type)
+        {
+          return param_pack (param, variant_type);
+        }
+
+      public static GLib.Variant? collect_args (GLib.GenericArray<JSC.Value> @params, [CCode (type = "const GVariantType*")] string? variant_type)
+        {
+          return params_pack (@params, variant_type); 
+        }
+
+      public static JSC.Value expand_arg (GLib.Variant param, JSC.Context context)
+        {
+          return param_unpack (param, context);
+        }
+
+      public static GenericArray<JSC.Value> expand_args (GLib.Variant @params, JSC.Context context)
+        {
+          return params_unpack (params, context);
+        }
+
       protected async GLib.Variant? invoke (string method, GLib.Variant? parameters) throws GLib.Error
         {
           var _params = parameters ?? new GLib.Variant.tuple ({ });
