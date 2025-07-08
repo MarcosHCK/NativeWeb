@@ -276,30 +276,15 @@ return (g_object_ref (message), TRUE);
 
 static void on_user_message_received_complete (IpcEndpoint* endpoint, GAsyncResult* res, WebKitUserMessage* message)
 {
-  GVariant* result = NULL;
   GError* tmperr = NULL;
+  GVariant* result = ipc_endpoint_handle_finish (endpoint, res, &tmperr);
+  GVariant* reply = ipc_reply_pack (result, tmperr);
+  g_variant_unref (result);
 
-  if ((result = ipc_endpoint_handle_finish (endpoint, res, &tmperr)), G_UNLIKELY (tmperr != NULL))
-    {
-      const guint code = tmperr->code;
-      const gchar* domain = g_quark_to_string (tmperr->domain);
-      const gchar* message_ = tmperr->message;
+  const gchar* name = webkit_user_message_get_name (message);
+  WebKitUserMessage* message2 = webkit_user_message_new (name, reply);
 
-      g_warning ("%s: %u: %s", domain, code, message_);
-      g_error_free (tmperr);
-    }
-  else
-    {
-      const gchar* name;
-      WebKitUserMessage* reply;
-
-      name = webkit_user_message_get_name (message);
-      reply = webkit_user_message_new (name, result);
-
-      webkit_user_message_send_reply (message, reply);
-      g_variant_unref (result);
-    }
-
+  webkit_user_message_send_reply (message, message2);
   g_object_unref (message);
 }
 
