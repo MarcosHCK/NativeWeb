@@ -35,7 +35,7 @@ libnativewebext = library \
     'nativewebext',
     c_args: [ '-DG_LOG_DOMAIN="NativeWebExt"', '-DG_LOG_USE_STRUCTURED=1' ],
     dependencies: [ config_dep, ipclib_valadep, libgio_dep, libwebkitgtkext_dep ],
-    sources: [ 'extension.c', 'extension.vala', 'iinvocable.vala', 'isignalable.vala', 'jscclass.vala', libs, 'mixin.h', params, promise,
+    sources: [ 'extension.c', 'extension.vala', 'iinvocable.vala', 'isignalable.vala', libs, 'mixin.h', params, promise, 'proxybase.vala',
       import ('gnome').compile_resources ('resources', 'resources.xml') ],
   )
 

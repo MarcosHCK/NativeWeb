@@ -19,7 +19,7 @@
 namespace NativeWeb
 {
 
-  public abstract class BaseJscClass : GLib.Object, IInvocable, ISignalable
+  public abstract class ProxyBase : GLib.Object, IInvocable, ISignalable
     {
 
       public string header { get; protected set; }

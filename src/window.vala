@@ -49,8 +49,7 @@ namespace NativeWeb
             {
               var bar = new Gtk.HeaderBar ();
 
-              bar.show_title_buttons = false;
-              bar.visible = false;
+              bar.visible = (bar.show_title_buttons = false);
               set_titlebar (bar);
             }
 

@@ -22,45 +22,6 @@ namespace NativeWeb
   public class Utf8Namespace : GLib.Object
     {
 
-      static GLib.Bytes? prelude (JSC.Context context, GenericArray<JSC.Value> args)
-        {
-          JSC.Value arg;
-
-          if (unlikely ((arg = prelude_args (context, args)) == null))
-            return null;
-
-          if (arg.is_string ())
-
-            return arg.to_string_as_bytes ();
-          else
-            {
-              unowned size_t size;
-              unowned void* data = arg.typed_array_get_data (out size);
-
-              return _g_bytes_new_static (data, size);
-            }
-        }
-
-      static JSC.Value? prelude_args (JSC.Context context, GenericArray<JSC.Value> args)
-        {
-
-          if (unlikely (args.length < 1))
-            {
-              context.throw ("string or bytearray expected");
-              return null;
-            }
-
-          unowned var arg = args [0];
-
-          if (unlikely ((arg.is_string () || (arg.is_typed_array () && arg.typed_array_get_type () == JSC.TypedArrayType.UINT8)) == false))
-            {
-              context.throw (@"string or bytearray expected, got $(arg.to_string ())");
-              return null;
-            }
-
-          return arg;
-        }
-
       [CCode (cheader_filename = "glib.h", cname = "g_bytes_new")]
       static extern GLib.Bytes _g_bytes_new (void* data, size_t size);
 
@@ -103,6 +64,45 @@ namespace NativeWeb
             return null;
           else
             return new JSC.Value.string (context, _g_utf8_make_valid (bytes.get_data ()));
+        }
+
+      static GLib.Bytes? prelude (JSC.Context context, GenericArray<JSC.Value> args)
+        {
+          JSC.Value arg;
+
+          if (unlikely ((arg = prelude_args (context, args)) == null))
+            return null;
+
+          if (arg.is_string ())
+
+            return arg.to_string_as_bytes ();
+          else
+            {
+              unowned size_t size;
+              unowned void* data = arg.typed_array_get_data (out size);
+
+              return _g_bytes_new_static (data, size);
+            }
+        }
+
+      static JSC.Value? prelude_args (JSC.Context context, GenericArray<JSC.Value> args)
+        {
+
+          if (unlikely (args.length < 1))
+            {
+              context.throw ("string or bytearray expected");
+              return null;
+            }
+
+          unowned var arg = args [0];
+
+          if (unlikely ((arg.is_string () || (arg.is_typed_array () && arg.typed_array_get_type () == JSC.TypedArrayType.UINT8)) == false))
+            {
+              context.throw (@"string or bytearray expected, got $(arg.to_string ())");
+              return null;
+            }
+
+          return arg;
         }
 
       private JSC.Value? validate (GenericArray<JSC.Value> args)

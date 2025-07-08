@@ -17,7 +17,7 @@
 
 function setupLogLib ()
 {
-  loglib.domain = 'NativeWebJs';
+  loglib.domain = 'NativeWebJS';
 
   ([ 'error', 'critical', 'warning', 'message', 'info', 'debug' ]).forEach (e =>
     {

@@ -115,6 +115,8 @@ namespace NativeWeb
           unowned var response = (int[]) &_response;
           unowned var handler_id = (ulong) self.responded.connect (newval => GLib.AtomicInt.set (ref response [0], newval));
 
+          self.present ();
+
           while (! cancellable.is_cancelled () && GLib.AtomicInt.get (ref response [0]) < 0)
             GLib.Thread.yield ();
 
@@ -134,7 +136,6 @@ namespace NativeWeb
           var task = new GLib.Task (this, cancellable, callback);
 
           set_transient_for (parent);
-          present ();
 
           task.set_check_cancellable (false);
           task.set_priority (GLib.Priority.DEFAULT);
@@ -161,13 +162,11 @@ namespace NativeWeb
         {
           Gtk.Window window;
 
-          if ((window = application.get_windows ().nth (0)?.data) != null)
+          if ((window = application.get_windows ().nth (0)?.data) == null)
 
-            show (application.active_window ?? window);
+            { this.application = application; this.present (); }
           else
-            {
-              this.application = application;
-              this.present ();
-            }}
+            { show (application.active_window ?? window); }
+        }
     }
 }
