@@ -28,18 +28,18 @@ typedef void NWPromiseCallback (NWPromise* promise, gpointer user_data);
 extern "C" {
 #endif // __cplusplus
 
-  G_GNUC_INTERNAL GType nw_promise_get_type (void) G_GNUC_CONST;
+  GType nw_promise_get_type (void) G_GNUC_CONST;
 
-  G_GNUC_INTERNAL JSCValue* nw_promise_create (JSCContext* context, NWPromiseCallback callback, gpointer user_data, GDestroyNotify notify);
-  G_GNUC_INTERNAL JSCContext* nw_promise_get_context (NWPromise* promise);
-  G_GNUC_INTERNAL NWPromise* nw_promise_ref (NWPromise* promise);
-  G_GNUC_INTERNAL void nw_promise_reject (NWPromise* promise, JSCValue* value);
-  G_GNUC_INTERNAL void nw_promise_reject_gerror (NWPromise* promise, GError* error);
-  G_GNUC_INTERNAL void nw_promise_reject_string (NWPromise* promise, const gchar* message);
-  G_GNUC_INTERNAL void nw_promise_reject_printf (NWPromise* promise, const gchar* fmt, ...) G_GNUC_PRINTF (2, 3);
-  G_GNUC_INTERNAL void nw_promise_reject_printf_valist (NWPromise* promise, const gchar* fmt, va_list args) G_GNUC_PRINTF (2, 0);
-  G_GNUC_INTERNAL void nw_promise_resolve (NWPromise* promise, JSCValue* value);
-  G_GNUC_INTERNAL void nw_promise_unref (NWPromise* promise);
+  JSCValue* nw_promise_create (JSCContext* context, NWPromiseCallback callback, gpointer user_data, GDestroyNotify notify);
+  JSCContext* nw_promise_get_context (NWPromise* promise);
+  NWPromise* nw_promise_ref (NWPromise* promise);
+  void nw_promise_reject (NWPromise* promise, JSCValue* value);
+  void nw_promise_reject_gerror (NWPromise* promise, GError* error);
+  void nw_promise_reject_string (NWPromise* promise, const gchar* message);
+  void nw_promise_reject_printf (NWPromise* promise, const gchar* fmt, ...) G_GNUC_PRINTF (2, 3);
+  void nw_promise_reject_printf_valist (NWPromise* promise, const gchar* fmt, va_list args) G_GNUC_PRINTF (2, 0);
+  void nw_promise_resolve (NWPromise* promise, JSCValue* value);
+  void nw_promise_unref (NWPromise* promise);
 
 #if __cplusplus
 }
