@@ -258,12 +258,12 @@ namespace NativeWeb
 
               message.parameters.get ("(&s)", &uri_string);
 
-              var path = Application.get_default ().resource_base_path;
+              var path = GLib.Application.get_default ().resource_base_path;
               var base_uri = GLib.Uri.build (0, "app", null, null, 0, path, null, null);
               var uri_object = GLib.Uri.parse_relative (base_uri, uri_string, 0);
               var uri = uri_object.to_string ();
 
-              Application.get_default ().open ({ GLib.File.new_for_uri (uri) }, "");
+              GLib.Application.get_default ().open ({ GLib.File.new_for_uri (uri) }, "");
               result = new GLib.Variant.boolean (true);
               break;
 

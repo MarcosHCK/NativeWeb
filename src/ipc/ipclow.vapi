@@ -14,10 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __IPC__
-#define __IPC__ 1
+[CCode (cprefix = "Ipc", lower_case_cprefix = "ipc_")]
 
-#include <ipccall.h>
-#include <ipcreply.h>
+namespace Ipc
+{
 
-#endif // __IPC__
+  [CCode (cheader_filename = "ipccall.h")] namespace Call
+    {
+      [CCode (returns_floating_reference = true)]
+      public static GLib.Variant pack (string name, GLib.Variant arguments);
+      public static unowned string unpack (GLib.Variant call, out unowned GLib.Variant arguments);
+    }
+
+  [CCode (cheader_filename = "ipcreply.h")] namespace Reply
+    {
+      [CCode (returns_floating_reference = true)]
+      public static GLib.Variant pack (GLib.Variant? result, GLib.Error? error = null);
+      [CCode (returns_floating_reference = false)]
+      public static GLib.Variant unpack (GLib.Variant reply) throws GLib.Error;
+    }
+}

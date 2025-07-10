@@ -21,7 +21,7 @@ libipc = library \
     c_args: [ '-DG_LOG_DOMAIN="Ipc"', '-DG_LOG_USE_STRUCTURED=1' ],
     dependencies: [ config_dep, libglib_dep ],
     include_directories: include_directories ('.'),
-    sources: [ 'ipc.h', 'ipccall.c', 'ipccall.h', 'ipcreply.c', 'ipcreply.h' ]
+    sources: [ 'ipccall.c', 'ipccall.h', 'ipcreply.c', 'ipcreply.h' ]
   )
 
 libipc_dep = declare_dependency \
@@ -33,5 +33,5 @@ libipc_dep = declare_dependency \
 libipc_valadep = declare_dependency \
   (
     dependencies: libipc_dep,
-    sources: [ 'ipc.vapi' ]
+    sources: [ 'ipclow.vapi' ]
   )

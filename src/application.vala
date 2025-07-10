@@ -14,23 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
-[CCode (cheader_filename = "ipc.h", cprefix = "Ipc", lower_case_cprefix = "ipc_")]
+[CCode (cprefix = "NW", lower_case_cprefix = "nw_")]
 
-namespace Ipc
+namespace NativeWeb
 {
 
-  namespace Call
+  public class Application : Gtk.Application
     {
-      [CCode (returns_floating_reference = true)]
-      public static GLib.Variant pack (string name, GLib.Variant arguments);
-      public static unowned string unpack (GLib.Variant call, out unowned GLib.Variant arguments);
-    }
 
-  namespace Reply
-    {
-      [CCode (returns_floating_reference = true)]
-      public static GLib.Variant pack (GLib.Variant? result, GLib.Error? error = null);
-      [CCode (returns_floating_reference = false)]
-      public static GLib.Variant unpack (GLib.Variant reply) throws GLib.Error;
+      private class string? _extension_dir = null;
+      public NativeWeb.Browser browser { get; }
+
+      public override void constructed ()
+        {
+          base.constructed ();
+          _browser = new NativeWeb.Browser (_extension_dir);
+          _browser.add_alias ("^/logo.svg$", @"$resource_base_path/icons/scalable/apps/$application_id.svg");
+          _browser.app_prefix = resource_base_path;
+        }
+
+      public class void setup_extension_dir (string extension_dir) requires (_extension_dir == null)
+        {
+          _extension_dir = extension_dir;
+        }
     }
 }

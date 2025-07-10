@@ -19,23 +19,17 @@
 
 G_DEFINE_QUARK (h-browser-error-quark, nw_browser_error)
 
-static void nw_browser_g_initable_iface (GInitableIface* iface);
-
 #define NW_BROWSER_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), H_TYPE_BROWSER, NWBrowserClass))
 #define NW_IS_BROWSER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), H_TYPE_BROWSER))
 #define NW_BROWSER_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), H_TYPE_BROWSER, NWBrowserClass))
 typedef struct _NWBrowserClass NWBrowserClass;
 
-#define _webkit_user_style_sheet_unref0(var) ((var == NULL) ? NULL : (var = (webkit_user_style_sheet_unref (var), NULL)))
-#define _webkit_user_script_unref0(var) ((var == NULL) ? NULL : (var = (webkit_user_script_unref (var), NULL)))
 #define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
 #define _g_bytes_unref0(var) ((var == NULL) ? NULL : (var = (g_bytes_unref (var), NULL)))
 #define _g_error_free0(var) ((var == NULL) ? NULL : (var = (g_error_free (var), NULL)))
 #define _g_free0(var) ((var == NULL) ? NULL : (var = (g_free (var), NULL)))
 typedef struct _Alias Alias;
 typedef struct _UserMessageHandler UserMessageHandler;
-
-static void on_emit (NWBrowser* browser, const gchar* name, GVariant* params);
 
 struct _NWBrowser
 {
@@ -71,19 +65,31 @@ enum
   prop_number,
 };
 
-G_DEFINE_TYPE_WITH_CODE (NWBrowser, nw_browser, G_TYPE_OBJECT, G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, nw_browser_g_initable_iface))
+G_DEFINE_FINAL_TYPE (NWBrowser, nw_browser, G_TYPE_OBJECT)
 static GParamSpec* properties [prop_number] = {0};
 
-static void _alias_free (gpointer pself)
-{
-  g_regex_unref (((Alias*) pself)->regex);
-  g_free (((Alias*) pself)->replacement);
-  g_slice_free (Alias, pself);
-}
+static void on_initialize_web_extensions (WebKitWebContext* context, NWBrowser* self);
+static void on_uri_scheme_request_resource (WebKitURISchemeRequest* request, gpointer pself);
 
-static void nw_browser_init (NWBrowser* self)
+static void nw_browser_class_constructed (GObject* pself)
 {
-  self->aliases = NULL;
+  NWBrowser* self = (NWBrowser*) pself;
+G_OBJECT_CLASS (nw_browser_parent_class)->constructed (pself);
+
+  self->context = g_object_new (WEBKIT_TYPE_WEB_CONTEXT, NULL);
+
+  on_initialize_web_extensions (self->context, self);
+
+  g_signal_connect (self->context, "initialize-web-process-extensions", G_CALLBACK (on_initialize_web_extensions), self);
+
+  self->settings = g_object_new (WEBKIT_TYPE_SETTINGS, "default-charset", "UTF-8", "enable-developer-extras", DEVELOPER, "enable-fullscreen", FALSE, NULL);
+  self->user_content = g_object_new (WEBKIT_TYPE_USER_CONTENT_MANAGER, NULL);
+
+  WebKitSecurityManager* security = webkit_web_context_get_security_manager (self->context);
+
+  webkit_web_context_set_cache_model (self->context, WEBKIT_CACHE_MODEL_DOCUMENT_BROWSER);
+  webkit_web_context_register_uri_scheme (self->context, "app", on_uri_scheme_request_resource, self, NULL);
+  webkit_security_manager_register_uri_scheme_as_secure (security, "app");
 }
 
 static void nw_browser_class_dispose (GObject* pself)
@@ -93,6 +99,13 @@ static void nw_browser_class_dispose (GObject* pself)
   g_object_unref (((NWBrowser*) pself)->user_content);
 
   G_OBJECT_CLASS (nw_browser_parent_class)->dispose (pself);
+}
+
+static void _alias_free (gpointer pself)
+{
+  g_regex_unref (((Alias*) pself)->regex);
+  g_free (((Alias*) pself)->replacement);
+  g_slice_free (Alias, pself);
 }
 
 static void nw_browser_class_finalize (GObject* pself)
@@ -143,6 +156,102 @@ static void report_missing (GUri* uri, WebKitURISchemeRequest* request)
 
   g_error_free (tmperr);
   g_free (path);
+}
+
+static void nw_browser_class_init (NWBrowserClass* klass)
+{
+  G_OBJECT_CLASS (klass)->constructed = nw_browser_class_constructed;
+  G_OBJECT_CLASS (klass)->dispose = nw_browser_class_dispose;
+  G_OBJECT_CLASS (klass)->finalize = nw_browser_class_finalize;
+  G_OBJECT_CLASS (klass)->get_property = nw_browser_class_get_property;
+  G_OBJECT_CLASS (klass)->set_property = nw_browser_class_set_property;
+
+  const GParamFlags flags1 = G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS;
+  const GParamFlags flags2 = G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS;
+
+  properties [prop_app_prefix] = g_param_spec_string ("app-prefix", "app-prefix", "app-prefix", NULL, flags1);
+  properties [prop_extension_dir] = g_param_spec_string ("extension-dir", "extension-dir", "extension-dir", NULL, flags2);
+  g_object_class_install_properties (G_OBJECT_CLASS (klass), prop_number, properties);
+}
+
+static void nw_browser_init (NWBrowser* self)
+{
+  self->aliases = NULL;
+}
+
+void nw_browser_add_alias (NWBrowser* browser, const gchar* alias, const gchar* value)
+{
+  g_return_if_fail (NW_IS_BROWSER (browser));
+  g_return_if_fail (alias != NULL);
+  g_return_if_fail (value != NULL);
+  GError* error = NULL;
+  GRegex* regex;
+
+  if ((regex = g_regex_new (alias, G_REGEX_OPTIMIZE, 0, &error)), G_UNLIKELY (error == NULL))
+    {
+      Alias reg = { .regex = regex, .replacement = g_strdup (value) };
+      browser->aliases = g_list_append (browser->aliases, g_slice_dup (Alias, &reg));
+    }
+  else
+    {
+      const guint code = error->code;
+      const gchar* domain = g_quark_to_string (error->domain);
+      const gchar* message = error->message;
+
+      g_error ("%s: %u: %s", domain, code, message);
+      g_error_free (error);
+    }
+}
+
+WebKitWebView* nw_browser_create_view (NWBrowser* browser)
+{
+  g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
+
+  WebKitWebView* webview = g_object_new (WEBKIT_TYPE_WEB_VIEW,
+      "settings", browser->settings,
+      "user-content-manager", browser->user_content,
+      "web-context", browser->context,
+      NULL);
+
+  return webview;
+}
+
+const gchar* nw_browser_get_app_prefix (NWBrowser* browser)
+{
+  g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
+  return browser->app_prefix;
+}
+
+const gchar* nw_browser_get_extension_dir (NWBrowser* browser)
+{
+  g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
+  return browser->extension_dir;
+}
+
+NWBrowser* nw_browser_new (const gchar* extension_dir)
+{
+  return g_object_new (NW_TYPE_BROWSER, "extension-dir", extension_dir, NULL);
+}
+
+void nw_browser_set_app_prefix (NWBrowser* browser, const gchar* app_prefix)
+{
+  g_return_if_fail (NW_IS_BROWSER (browser));
+  _g_free0 (browser->app_prefix);
+
+  browser->app_prefix = g_strdup (app_prefix);
+}
+
+static void on_initialize_web_extensions (WebKitWebContext* context, NWBrowser* self)
+{
+  GVariantBuilder builder = G_VARIANT_BUILDER_INIT ((const GVariantType*) "(s)");
+
+  g_variant_builder_add_value (&builder, g_variant_new_take_string (g_uuid_string_random ()));
+
+  GVariant* user_data = g_variant_builder_end (&builder);
+
+  if (self->extension_dir != NULL)
+  webkit_web_context_set_web_process_extensions_directory (context, self->extension_dir);
+  webkit_web_context_set_web_process_extensions_initialization_user_data (context, user_data);
 }
 
 static void on_uri_scheme_request_resource (WebKitURISchemeRequest* request, gpointer pself)
@@ -211,127 +320,10 @@ static void on_uri_scheme_request_resource (WebKitURISchemeRequest* request, gpo
 
             _g_error_free0 (tmperr);
           else
-            {
-              webkit_uri_scheme_request_finish_error (request, tmperr);
-              g_error_free (tmperr);
-              return;
-            }}}
+            { webkit_uri_scheme_request_finish_error (request, tmperr);
+              g_error_free (tmperr); return; }
+        }
+    }
   while ((list = (list ? list->next : self->aliases)) != NULL);
   report_missing (uri, request);
-}
-
-static void nw_browser_class_init (NWBrowserClass* klass)
-{
-  G_OBJECT_CLASS (klass)->dispose = nw_browser_class_dispose;
-  G_OBJECT_CLASS (klass)->finalize = nw_browser_class_finalize;
-  G_OBJECT_CLASS (klass)->get_property = nw_browser_class_get_property;
-  G_OBJECT_CLASS (klass)->set_property = nw_browser_class_set_property;
-
-  const GParamFlags flags1 = G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS;
-  const GParamFlags flags2 = G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS;
-
-  properties [prop_app_prefix] = g_param_spec_string ("app-prefix", "app-prefix", "app-prefix", NULL, flags1);
-  properties [prop_extension_dir] = g_param_spec_string ("extension-dir", "extension-dir", "extension-dir", NULL, flags2);
-  g_object_class_install_properties (G_OBJECT_CLASS (klass), prop_number, properties);
-}
-
-static void on_initialize_web_extensions (WebKitWebContext* context, NWBrowser* self)
-{
-  GVariantBuilder builder = G_VARIANT_BUILDER_INIT ((const GVariantType*) "(s)");
-
-  g_variant_builder_add_value (&builder, g_variant_new_take_string (g_uuid_string_random ()));
-
-  GVariant* user_data = g_variant_builder_end (&builder);
-
-  if (self->extension_dir != NULL)
-  webkit_web_context_set_web_process_extensions_directory (context, self->extension_dir);
-  webkit_web_context_set_web_process_extensions_initialization_user_data (context, user_data);
-}
-
-static gboolean nw_browser_g_initable_iface_init (GInitable* pself, GCancellable* cancellable, GError** error)
-{
-  NWBrowser* self = NW_BROWSER (pself);
-
-  self->context = g_object_new (WEBKIT_TYPE_WEB_CONTEXT, NULL);
-
-  on_initialize_web_extensions (self->context, self);
-
-  g_signal_connect (self->context, "initialize-web-process-extensions", G_CALLBACK (on_initialize_web_extensions), self);
-
-  self->settings = g_object_new (WEBKIT_TYPE_SETTINGS, "default-charset", "UTF-8", "enable-developer-extras", DEVELOPER, "enable-fullscreen", FALSE, NULL);
-  self->user_content = g_object_new (WEBKIT_TYPE_USER_CONTENT_MANAGER, NULL);
-
-  WebKitSecurityManager* security = webkit_web_context_get_security_manager (self->context);
-
-  webkit_web_context_set_cache_model (self->context, WEBKIT_CACHE_MODEL_DOCUMENT_BROWSER);
-  webkit_web_context_register_uri_scheme (self->context, "app", on_uri_scheme_request_resource, self, NULL);
-  webkit_security_manager_register_uri_scheme_as_secure (security, "app");
-return TRUE;
-}
-
-static void nw_browser_g_initable_iface (GInitableIface* iface)
-{
-  iface->init = nw_browser_g_initable_iface_init;
-}
-
-void nw_browser_add_alias (NWBrowser* browser, const gchar* alias, const gchar* value)
-{
-  g_return_if_fail (NW_IS_BROWSER (browser));
-  g_return_if_fail (alias != NULL);
-  g_return_if_fail (value != NULL);
-  GError* error = NULL;
-  GRegex* regex;
-
-  if ((regex = g_regex_new (alias, G_REGEX_OPTIMIZE, 0, &error)), G_UNLIKELY (error == NULL))
-    {
-      Alias reg = { .regex = regex, .replacement = g_strdup (value) };
-      browser->aliases = g_list_append (browser->aliases, g_slice_dup (Alias, &reg));
-    }
-  else
-    {
-      const guint code = error->code;
-      const gchar* domain = g_quark_to_string (error->domain);
-      const gchar* message = error->message;
-
-      g_error ("%s: %u: %s", domain, code, message);
-      g_error_free (error);
-    }
-}
-
-WebKitWebView* nw_browser_create_view (NWBrowser* browser)
-{
-  g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
-
-  WebKitWebView* webview = g_object_new (WEBKIT_TYPE_WEB_VIEW,
-      "settings", browser->settings,
-      "user-content-manager", browser->user_content,
-      "web-context", browser->context,
-      NULL);
-
-  return webview;
-}
-
-const gchar* nw_browser_get_app_prefix (NWBrowser* browser)
-{
-  g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
-  return browser->app_prefix;
-}
-
-const gchar* nw_browser_get_extension_dir (NWBrowser* browser)
-{
-  g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
-  return browser->extension_dir;
-}
-
-NWBrowser* nw_browser_new (const gchar* extension_dir, GCancellable* cancellable, GError** error)
-{
-  return g_initable_new (NW_TYPE_BROWSER, cancellable, error, "extension-dir", extension_dir, NULL);
-}
-
-void nw_browser_set_app_prefix (NWBrowser* browser, const gchar* app_prefix)
-{
-  g_return_if_fail (NW_IS_BROWSER (browser));
-  _g_free0 (browser->app_prefix);
-
-  browser->app_prefix = g_strdup (app_prefix);
 }

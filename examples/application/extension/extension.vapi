@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
-[CCode (cprefix = "NW", lower_case_cprefix = "nw_")]
+[CCode (cprefix = "NWA", lower_case_cprefix = "nwa_")]
 
-namespace NativeWeb
+namespace NativeWebApp
 {
   [CCode (cheader_filename = "extension.h", cname = "WEBKIT_EXTENSION_DIR")]
   public const string EXTENSION_DIR;

@@ -21,11 +21,11 @@ namespace NativeWeb
 
   [CCode (cheader_filename = "browser.h")]
 
-  public class Browser : GLib.Object, GLib.Initable
+  public sealed class Browser : GLib.Object
     {
       public string app_prefix { get; set; }
       public string extension_dir { get; construct; }
-      public Browser (string? extension_dir, GLib.Cancellable? cancellable = null) throws GLib.Error;
+      public Browser (string? extension_dir);
       public void add_alias (string alias, string value);
       [CCode (returns_floating_reference = true)]
       public WebKit.WebView create_view ();

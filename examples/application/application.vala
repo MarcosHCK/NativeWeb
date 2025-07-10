@@ -14,20 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
-[CCode (cprefix = "NW", lower_case_cprefix = "nw_")]
+[CCode (cprefix = "NWA", lower_case_cprefix = "nwa_")]
 
-namespace NativeWeb
+namespace NativeWebApp
 {
 
-  public class Application : Gtk.Application, GLib.Initable
+  public class Application : NativeWeb.Application
     {
-
-      private NativeWeb.Browser? browser;
 
       construct
         {
           add_actions (this);
           set_version (Config.PACKAGE_STRING);
+        }
+
+      class construct
+        {
+          setup_extension_dir (EXTENSION_DIR);
         }
 
       public static int main (string[] args)
@@ -39,7 +42,6 @@ namespace NativeWeb
       public Application () throws GLib.Error
         {
           Object (application_id: "org.hck.nativeweb.app", flags: GLib.ApplicationFlags.HANDLES_OPEN);
-          init ();
         }
 
       public override void activate ()
@@ -67,14 +69,12 @@ namespace NativeWeb
           self.add_action ("quit", null, () => { foreach (unowned var window in @ref.get_windows ()) window.close (); });
         }
 
-      public bool init (GLib.Cancellable? cancellable = null) throws GLib.Error
+      public override void constructed ()
         {
-          browser = new NativeWeb.Browser (EXTENSION_DIR);
-          browser.add_alias ("^/logo.svg$", @"$resource_base_path/icons/scalable/apps/$application_id.svg");
+          base.constructed ();
           browser.add_alias ("^/([-_a-zA-Z]+)$", @"$resource_base_path/page/\\1.html");
           browser.add_alias ("^/$", @"$resource_base_path/page/index.html");
           browser.app_prefix = @"$resource_base_path/page";
-          return true;
         }
 
       public override void open (GLib.File[] files, string hint)
@@ -84,6 +84,7 @@ namespace NativeWeb
 
       private void open_file (GLib.File file, string hint)
         {
+          browser.create_view ().ref_sink ();
 
           var window = new NativeWeb.Window.without_titlebar (this, browser);
 

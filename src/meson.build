@@ -35,7 +35,7 @@ libnativeweb = library \
       cc.find_library ('m', required: false),
       libipc_valadep,
       libresources_dep.as_link_whole () ],
-    sources: [ 'browser.c', 'browser.h', 'browser.vapi', supports, widgets ],
+    sources: [ 'application.vala', 'browser.c', 'browser.h', 'browser.vapi', supports, widgets ],
   )
 
 libnativeweb_dep = declare_dependency \

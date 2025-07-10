@@ -41,7 +41,7 @@ extern "C" {
   WebKitWebView* nw_browser_create_view (NWBrowser* browser);
   const gchar* nw_browser_get_app_prefix (NWBrowser* browser);
   const gchar* nw_browser_get_extension_dir (NWBrowser* browser);
-  NWBrowser* nw_browser_new (const gchar* extension_dir, GCancellable* cancellable, GError** error);
+  NWBrowser* nw_browser_new (const gchar* extension_dir);
   void nw_browser_set_app_prefix (NWBrowser* browser, const gchar* app_prefix);
 
 #if __cplusplus
