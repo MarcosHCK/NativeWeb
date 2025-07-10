@@ -55,11 +55,12 @@ GVariant* ipc_reply_unpack (GVariant* reply, GError** error)
   const gchar* message = NULL;
   GVariant* params = NULL;
 
-  g_variant_get (reply, "(m&vm(&si&s))", &params, &failed, &domain, &code, &message);
+  g_variant_get (reply, "(mvm(&si&s))", &params, &failed, &domain, &code, &message);
 
   if (G_LIKELY (failed == FALSE))
 
-    return g_variant_ref (params);
+    return params;
   else
-    return (g_set_error_literal (error, g_quark_from_string (domain), code, message), NULL);
+    { if (params) g_variant_unref (params);
+      return (g_set_error_literal (error, g_quark_from_string (domain), code, message), NULL); }
 }

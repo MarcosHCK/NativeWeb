@@ -134,7 +134,13 @@ libgtk4_dep = dependency ('gtk4', required: true)
 libwebkitgtk_dep = dependency ('webkitgtk-6.0', required: true)
 libwebkitgtkext_dep = dependency ('webkitgtk-web-process-extension-6.0', required: true)
 
+# lib
+
 subdir ('src')
+
+# tests and examples
+
+subdir ('examples')
 
 ########################
 # Summaries            #
