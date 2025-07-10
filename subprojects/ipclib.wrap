@@ -1,7 +1,0 @@
-[wrap-git]
-depth = 1
-revision = HEAD
-url = https://github.com/MarcosHCK/ipclib
-
-[provide]
-dependency_names = ipclib, ipclib-vala

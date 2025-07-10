@@ -45,7 +45,7 @@ namespace NativeWeb
       protected async GLib.Variant? invoke (string method, GLib.Variant? parameters) throws GLib.Error
         {
           var _params = parameters ?? new GLib.Variant.tuple ({ });
-          var _message = Ipc.call_pack (method, _params);
+          var _message = Ipc.Call.pack (method, _params);
           return yield send (_message);
         }
 

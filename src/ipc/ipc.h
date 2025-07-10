@@ -14,19 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
-[CCode (cprefix = "NW", lower_case_cprefix = "nw_")]
+#ifndef __IPC__
+#define __IPC__ 1
 
-namespace NativeWeb
-{
+#include <ipccall.h>
+#include <ipcreply.h>
 
-  [CCode (cheader_filename = "browser.h")]
-
-  public class Browser : GLib.Object, GLib.Initable
-    {
-      public string app_prefix { get; set; }
-      public string extension_dir { get; construct; }
-      public Browser (string? extension_dir, GLib.Cancellable? cancellable = null) throws GLib.Error;
-      public void add_alias (string alias, string value);
-      [CCode (returns_floating_reference = true)]
-      public WebKit.WebView create_view ();
-    }}
+#endif // __IPC__

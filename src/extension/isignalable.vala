@@ -52,7 +52,7 @@ namespace NativeWeb
       public void consume (GLib.Variant message)
         {
           GLib.Variant _params;
-          string signal_name = Ipc.call_unpack (message, out _params);
+          string signal_name = Ipc.Call.unpack (message, out _params);
 
           recv_signal (signal_name, _params);
         }

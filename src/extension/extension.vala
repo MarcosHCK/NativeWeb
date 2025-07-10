@@ -98,7 +98,7 @@ namespace NativeWeb
           var message = new WebKit.UserMessage (name, parameters);
           var response = yield wk_extension.send_message_to_context (message, cancellable);
           var result = response.parameters;
-          return Ipc.reply_unpack (result);
+          return Ipc.Reply.unpack (result);
         }
 
       private void on_user_message_received (WebKit.UserMessage message)

@@ -15,6 +15,12 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# libs
+
+subdir ('ipc')
+
+# components
+
 subdir ('extension')
 subdir ('resources')
 
@@ -25,18 +31,18 @@ libnativeweb = library \
   (
     'nativeweb',
     c_args: [ '-DG_LOG_DOMAIN="NativeWeb"', '-DG_LOG_USE_STRUCTURED=1' ],
-    dependencies: [ config_dep, ipclib_valadep, libgtk4_dep, libwebkitgtk_dep,
+    dependencies: [ config_dep, libgtk4_dep, libwebkitgtk_dep,
       cc.find_library ('m', required: false),
+      libipc_valadep,
       libresources_dep.as_link_whole () ],
     sources: [ 'browser.c', 'browser.h', 'browser.vapi', supports, widgets ],
   )
 
 libnativeweb_dep = declare_dependency \
   (
-    dependencies: [ ipclib_valadep, libgtk4_dep, libwebkitgtk_dep ],
+    dependencies: [ libgtk4_dep, libwebkitgtk_dep ],
     include_directories: include_directories ('.'),
     link_with: libnativeweb,
-    sources: 'browser.vapi',
   )
 
 libnativeweb_valadep = declare_dependency \

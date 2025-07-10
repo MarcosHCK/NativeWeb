@@ -14,19 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
-[CCode (cprefix = "NW", lower_case_cprefix = "nw_")]
+[CCode (cheader_filename = "ipc.h", cprefix = "Ipc", lower_case_cprefix = "ipc_")]
 
-namespace NativeWeb
+namespace Ipc
 {
 
-  [CCode (cheader_filename = "browser.h")]
-
-  public class Browser : GLib.Object, GLib.Initable
+  namespace Call
     {
-      public string app_prefix { get; set; }
-      public string extension_dir { get; construct; }
-      public Browser (string? extension_dir, GLib.Cancellable? cancellable = null) throws GLib.Error;
-      public void add_alias (string alias, string value);
       [CCode (returns_floating_reference = true)]
-      public WebKit.WebView create_view ();
-    }}
+      public static GLib.Variant pack (string name, GLib.Variant arguments);
+      public static unowned string unpack (GLib.Variant call, out unowned GLib.Variant arguments);
+    }
+
+  namespace Reply
+    {
+      [CCode (returns_floating_reference = true)]
+      public static GLib.Variant pack (GLib.Variant? result, GLib.Error? error = null);
+      [CCode (returns_floating_reference = false)]
+      public static GLib.Variant unpack (GLib.Variant reply) throws GLib.Error;
+    }
+}

@@ -128,9 +128,8 @@ endif
 add_project_arguments (cc.get_supported_arguments (warning_c_args), language: 'c')
 add_project_link_arguments (cc.get_supported_link_arguments (warning_c_link_args), language: 'c')
 
-ipclib_dep = dependency ('ipclib', required: true)
-ipclib_valadep = dependency ('ipclib-vala', required: true)
 libgio_dep = dependency ('gio-2.0', required: true)
+libglib_dep = dependency ('glib-2.0', required: true)
 libgtk4_dep = dependency ('gtk4', required: true)
 libwebkitgtk_dep = dependency ('webkitgtk-6.0', required: true)
 libwebkitgtkext_dep = dependency ('webkitgtk-web-process-extension-6.0', required: true)

@@ -15,5 +15,23 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
-*
-!.gitignore
+libipc = library \
+  (
+    'ipc',
+    c_args: [ '-DG_LOG_DOMAIN="Ipc"', '-DG_LOG_USE_STRUCTURED=1' ],
+    dependencies: [ config_dep, libglib_dep ],
+    include_directories: include_directories ('.'),
+    sources: [ 'ipc.h', 'ipccall.c', 'ipccall.h', 'ipcreply.c', 'ipcreply.h' ]
+  )
+
+libipc_dep = declare_dependency \
+  (
+    include_directories: include_directories ('.'),
+    link_with: libipc,
+  )
+
+libipc_valadep = declare_dependency \
+  (
+    dependencies: libipc_dep,
+    sources: [ 'ipc.vapi' ]
+  )

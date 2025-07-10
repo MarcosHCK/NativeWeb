@@ -16,7 +16,6 @@
  */
 #include <config.h>
 #include <browser.h>
-#include <ipclib.h>
 
 G_DEFINE_QUARK (h-browser-error-quark, nw_browser_error)
 
@@ -37,7 +36,6 @@ typedef struct _Alias Alias;
 typedef struct _UserMessageHandler UserMessageHandler;
 
 static void on_emit (NWBrowser* browser, const gchar* name, GVariant* params);
-static void on_user_message_received_complete (IpcEndpoint* endpoint, GAsyncResult* res, WebKitUserMessage* message);
 
 struct _NWBrowser
 {
@@ -47,7 +45,6 @@ struct _NWBrowser
   GList* aliases;
   gchar* app_prefix;
   gchar* extension_dir;
-  IpcEndpoint* user_message_endpoint;
 
   /*<private>*/
   WebKitWebContext* context;
@@ -87,9 +84,6 @@ static void _alias_free (gpointer pself)
 static void nw_browser_init (NWBrowser* self)
 {
   self->aliases = NULL;
-  self->user_message_endpoint = ipc_endpoint_new ();
-
-  g_signal_connect_object (self->user_message_endpoint, "emit", G_CALLBACK (on_emit), self, G_CONNECT_SWAPPED);
 }
 
 static void nw_browser_class_dispose (GObject* pself)
@@ -97,7 +91,6 @@ static void nw_browser_class_dispose (GObject* pself)
   g_object_unref (((NWBrowser*) pself)->context);
   g_object_unref (((NWBrowser*) pself)->settings);
   g_object_unref (((NWBrowser*) pself)->user_content);
-  g_object_unref (((NWBrowser*) pself)->user_message_endpoint);
 
   G_OBJECT_CLASS (nw_browser_parent_class)->dispose (pself);
 }
@@ -132,16 +125,6 @@ static void nw_browser_class_set_property (GObject* pself, guint property_id, co
         break;
       default: G_OBJECT_WARN_INVALID_PROPERTY_ID (pself, property_id, pspec);
     }}
-
-static void on_emit (NWBrowser* self, const gchar* name, GVariant* params)
-{
-  WebKitWebContext* context = NULL;
-  WebKitUserMessage* message = NULL;
-
-  context = self->context;
-  message = webkit_user_message_new (name, params);
-  webkit_web_context_send_message_to_all_extensions (context, message);
-}
 
 static void report_missing (GUri* uri, WebKitURISchemeRequest* request)
 {
@@ -265,29 +248,6 @@ static void on_initialize_web_extensions (WebKitWebContext* context, NWBrowser* 
   webkit_web_context_set_web_process_extensions_initialization_user_data (context, user_data);
 }
 
-static gboolean on_user_message_received (WebKitWebContext* context, WebKitUserMessage* message, NWBrowser* self)
-{
-  const gchar* name = webkit_user_message_get_name (message);
-  GVariant* params = webkit_user_message_get_parameters (message);
-
-  ipc_endpoint_handle (self->user_message_endpoint, name, params, NULL, (GAsyncReadyCallback) on_user_message_received_complete, message);
-return (g_object_ref (message), TRUE);
-}
-
-static void on_user_message_received_complete (IpcEndpoint* endpoint, GAsyncResult* res, WebKitUserMessage* message)
-{
-  GError* tmperr = NULL;
-  GVariant* result = ipc_endpoint_handle_finish (endpoint, res, &tmperr);
-  GVariant* reply = ipc_reply_pack (result, tmperr);
-  g_variant_unref (result);
-
-  const gchar* name = webkit_user_message_get_name (message);
-  WebKitUserMessage* message2 = webkit_user_message_new (name, reply);
-
-  webkit_user_message_send_reply (message, message2);
-  g_object_unref (message);
-}
-
 static gboolean nw_browser_g_initable_iface_init (GInitable* pself, GCancellable* cancellable, GError** error)
 {
   NWBrowser* self = NW_BROWSER (pself);
@@ -297,7 +257,6 @@ static gboolean nw_browser_g_initable_iface_init (GInitable* pself, GCancellable
   on_initialize_web_extensions (self->context, self);
 
   g_signal_connect (self->context, "initialize-web-process-extensions", G_CALLBACK (on_initialize_web_extensions), self);
-  g_signal_connect (self->context, "user-message-received", G_CALLBACK (on_user_message_received), self);
 
   self->settings = g_object_new (WEBKIT_TYPE_SETTINGS, "default-charset", "UTF-8", "enable-developer-extras", DEVELOPER, "enable-fullscreen", FALSE, NULL);
   self->user_content = g_object_new (WEBKIT_TYPE_USER_CONTENT_MANAGER, NULL);
@@ -337,22 +296,6 @@ void nw_browser_add_alias (NWBrowser* browser, const gchar* alias, const gchar* 
       g_error ("%s: %u: %s", domain, code, message);
       g_error_free (error);
     }
-}
-
-void nw_browser_add_user_message_handler (NWBrowser* browser, IpcHandler* handler, const gchar* name, const GVariantType* param_type)
-{
-  g_return_if_fail (NW_IS_BROWSER (browser));
-  g_return_if_fail (IPC_IS_HANDLER (handler));
-
-  ipc_endpoint_add_handler (browser->user_message_endpoint, handler, name, param_type);
-}
-
-void nw_browser_remove_user_message_handler (NWBrowser* browser, const gchar* name)
-{
-  g_return_if_fail (NW_IS_BROWSER (browser));
-  g_return_if_fail (name != NULL);
-
-  ipc_endpoint_delete_handler (browser->user_message_endpoint, name);
 }
 
 WebKitWebView* nw_browser_create_view (NWBrowser* browser)

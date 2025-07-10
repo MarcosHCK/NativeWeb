@@ -282,7 +282,7 @@ namespace NativeWeb
             } }
           catch (GLib.Error e)
             {
-              var parameters = Ipc.reply_pack (null, e);
+              var parameters = Ipc.Reply.pack (null, e);
               var reply = new WebKit.UserMessage (name, parameters);
               message.send_reply (reply);
             }
@@ -290,7 +290,7 @@ namespace NativeWeb
             {
               result = new GLib.Variant.tuple ({ result });
 
-              var parameters = Ipc.reply_pack (result, null);
+              var parameters = Ipc.Reply.pack (result);
               var reply = new WebKit.UserMessage (name, parameters);
               message.send_reply (reply);
             }

@@ -16,7 +16,6 @@
  */
 #ifndef __NW_BROWSER__
 #define __NW_BROWSER__ 1
-#include <ipclib.h>
 #include <webkit/webkit.h>
 
 #define NW_BROWSER_ERROR (nw_browser_error_quark ())
@@ -39,8 +38,6 @@ extern "C" {
   GQuark nw_browser_error_quark (void) G_GNUC_CONST;
 
   void nw_browser_add_alias (NWBrowser* browser, const gchar* alias, const gchar* value);
-  void nw_browser_add_user_message_handler (NWBrowser* browser, IpcHandler* handler, const gchar* name, const GVariantType* param_type);
-  void nw_browser_remove_user_message_handler (NWBrowser* browser, const gchar* name);
   WebKitWebView* nw_browser_create_view (NWBrowser* browser);
   const gchar* nw_browser_get_app_prefix (NWBrowser* browser);
   const gchar* nw_browser_get_extension_dir (NWBrowser* browser);

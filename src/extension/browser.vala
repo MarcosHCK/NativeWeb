@@ -40,7 +40,7 @@ namespace NativeWeb
           var message = new WebKit.UserMessage (method, parameters);
           var response = yield web_page.send_message_to_view (message, null);
           var result = response.parameters;
-          return Ipc.reply_unpack (result);
+          return Ipc.Reply.unpack (result);
         }
 
       private bool on_user_message_received (WebKit.UserMessage user_message)

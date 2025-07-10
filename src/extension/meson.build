@@ -19,6 +19,9 @@
 
 params = files ('params.c', 'params.h', 'params.vapi')
 promise = files ('promise.c', 'promise.h', 'promise.vapi')
+proxy = files ('iinvocable.vala', 'isignalable.vala', 'proxybase.vala')
+
+apis = [ params, promise, proxy ]
 
 # libs
 
@@ -34,22 +37,21 @@ libnativewebext = library \
   (
     'nativewebext',
     c_args: [ '-DG_LOG_DOMAIN="NativeWebExt"', '-DG_LOG_USE_STRUCTURED=1' ],
-    dependencies: [ config_dep, ipclib_valadep, libgio_dep, libwebkitgtkext_dep ],
-    sources: [ 'extension.c', 'extension.vala', 'iinvocable.vala', 'isignalable.vala', libs, 'mixin.h', params, promise, 'proxybase.vala',
+    dependencies: [ config_dep, libipc_valadep, libgio_dep, libwebkitgtkext_dep ],
+    sources: [ apis, 'extension.c', 'extension.vala', libs, 'module.vala', 'mixin.h', params, promise,
       import ('gnome').compile_resources ('resources', 'resources.xml') ],
   )
 
 libnativewebext_dep = declare_dependency \
   (
-    dependencies: [ ipclib_dep, libgio_dep, libwebkitgtkext_dep ],
+    dependencies: [ libgio_dep, libwebkitgtkext_dep ],
     include_directories: include_directories ('.'),
     link_with: libnativewebext,
-    sources: 'promise.h'
   )
 
 libnativewebext_valadep = declare_dependency \
   (
-    dependencies: [ ipclib_valadep, libnativewebext_dep ],
+    dependencies: libnativewebext_dep,
     sources: [ 'promise.vapi' ]
   )
 
