@@ -19,6 +19,18 @@
 namespace NativeWeb
 {
 
+  struct DeferredUrl
+    {
+      string hint;
+      GLib.File url;
+
+      public DeferredUrl (GLib.File url, string hint)
+        {
+          this.hint = hint;
+          this.url = url;
+        }
+    }
+
   public class Application : Gtk.Application
     {
 
@@ -27,9 +39,16 @@ namespace NativeWeb
 
       private GLib.DBusConnection? _connection = null;
       private GLib.Cancellable? _boot_cancellable = null;
+      private GLib.Queue<DeferredUrl?> _deferred = null;
       private bool _register_complete = false;
       private class string? _extension_dir = null;
       private class bool _launch_bus = true;
+      private bool ready { get; private set; default = false; }
+
+      public Application (string? application_id)
+        {
+          Object (application_id: application_id, flags: GLib.ApplicationFlags.HANDLES_OPEN);
+        }
 
       public override void constructed ()
         {
@@ -48,6 +67,7 @@ namespace NativeWeb
           _browser = new NativeWeb.Browser (_extension_dir);
           _browser.add_alias ("^/logo.svg$", @"$resource_base_path/icons/scalable/apps/$application_id.svg");
           _browser.app_prefix = resource_base_path;
+          _deferred = new GLib.Queue<DeferredUrl?> ();
         }
 
       public new virtual bool dbus_register (GLib.DBusConnection connection, string object_path) throws GLib.Error
@@ -67,6 +87,24 @@ namespace NativeWeb
           var message = e != null ? new Message.gerror (e) : new Message.warning (format);
 
           message.show_orphan (this);
+        }
+
+      public override void open (GLib.File[] files, string hint)
+        {
+
+          if (_ready)
+
+            foreach (unowned var file in files)
+              open_url (file, hint);
+          else
+            foreach (unowned var file in files)
+              _deferred.push_tail (DeferredUrl (file, hint));
+        }
+
+      [HasEmitter]
+      public virtual signal void open_url (GLib.File url, string hint)
+        {
+          warning ("NWApplication::open_url call fell in deaf hears");
         }
 
       public class void set_extension_dir (string extension_dir) requires (_extension_dir == null)
@@ -139,7 +177,10 @@ namespace NativeWeb
                   return;
                 }
 
-              _register_complete = true;
+              ready = (_register_complete = true);
+
+              for (DeferredUrl? _url; (_url = _deferred.pop_head ()) != null;)
+                open_url (_url.url, _url.hint);
               base.release ();
             });
         }

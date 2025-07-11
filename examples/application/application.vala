@@ -35,13 +35,12 @@ namespace NativeWebApp
 
       public static int main (string[] args)
         {
-          try { return (new Application ()).run (args); } catch (GLib.Error e)
-            { critical (@"$(e.domain): $(e.code): $(e.message)"); return 1; }
+          return (new Application ()).run (args);
         }
 
-      public Application () throws GLib.Error
+      public Application ()
         {
-          Object (application_id: "org.hck.nativeweb.app", flags: GLib.ApplicationFlags.HANDLES_OPEN);
+          base ("org.hck.nativeweb.app");
         }
 
       public override void activate ()
@@ -77,17 +76,13 @@ namespace NativeWebApp
           browser.app_prefix = @"$resource_base_path/page";
         }
 
-      public override void open (GLib.File[] files, string hint)
+      public override void open_url (GLib.File url, string hint)
         {
-          foreach (unowned var file in files) open_file (file, hint);
-        }
-
-      private void open_file (GLib.File file, string hint)
-        {
+          var uri = url.get_uri ();
           var window = new NativeWeb.Window.without_titlebar (this, browser);
 
           window.present ();
-          window.load_uri (file.get_uri ());
+          window.load_uri (uri);
         }
     }
 }
