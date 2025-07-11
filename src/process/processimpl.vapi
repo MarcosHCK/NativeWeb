@@ -14,22 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <config.h>
-#include <gmodule.h>
-#include <nativewebext.h>
-#include <webkit/webkit-web-process-extension.h>
 
-static void on_register (NWExtension* extension, JSCContext* context, WebKitWebPage* web_page)
+namespace NativeWeb { namespace ProcessImpl
 {
-  (void) extension;
-  (void) context;
-  (void) web_page;
-}
 
-G_MODULE_EXPORT void webkit_web_process_extension_initialize_with_user_data (WebKitWebProcessExtension* wk_extension, const GVariant* user_data)
-{
-  g_info (PACKAGE_TARNAME " extension loaded");
-
-  gpointer object = nw_extension_new_default (wk_extension, user_data);
-  g_signal_connect (object, "register", G_CALLBACK (on_register), object);
-}
+  [CCode (cheader_filename = "process/processimpl.h", cname = "_nw_process_impl_setup_launcher")]
+  internal static void setup_launcher (GLib.SubprocessLauncher launcher);
+} }

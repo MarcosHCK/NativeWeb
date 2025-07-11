@@ -36,7 +36,9 @@ libs = [ browserlib, loglib, utf8lib ]
 libnativewebext = library \
   (
     'nativewebext',
-    c_args: [ '-DG_LOG_DOMAIN="NativeWebExt"', '-DG_LOG_USE_STRUCTURED=1' ],
+    c_args: [ '-DG_LOG_DOMAIN="NativeWebExt"', '-DG_LOG_USE_STRUCTURED=1',
+      '-DBUILD_DIR="@0@"'.format (meson.current_build_dir ()),
+      '-DSOURCE_DIR="@0@"'.format (meson.current_source_dir ()) ],
     dependencies: [ config_dep, libipc_valadep, libgio_dep, libwebkitgtkext_dep ],
     sources: [ apis, 'extension.c', 'extension.vala', libs, 'module.vala', 'mixin.h', params, promise,
       import ('gnome').compile_resources ('resources', 'resources.xml') ],

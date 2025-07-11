@@ -30,7 +30,7 @@ namespace NativeWebApp
 
       class construct
         {
-          setup_extension_dir (EXTENSION_DIR);
+          set_extension_dir (EXTENSION_DIR);
         }
 
       public static int main (string[] args)
@@ -84,8 +84,6 @@ namespace NativeWebApp
 
       private void open_file (GLib.File file, string hint)
         {
-          browser.create_view ().ref_sink ();
-
           var window = new NativeWeb.Window.without_titlebar (this, browser);
 
           window.present ();

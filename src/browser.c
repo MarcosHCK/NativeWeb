@@ -24,10 +24,11 @@ G_DEFINE_QUARK (h-browser-error-quark, nw_browser_error)
 #define NW_BROWSER_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), H_TYPE_BROWSER, NWBrowserClass))
 typedef struct _NWBrowserClass NWBrowserClass;
 
-#define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
 #define _g_bytes_unref0(var) ((var == NULL) ? NULL : (var = (g_bytes_unref (var), NULL)))
 #define _g_error_free0(var) ((var == NULL) ? NULL : (var = (g_error_free (var), NULL)))
 #define _g_free0(var) ((var == NULL) ? NULL : (var = (g_free (var), NULL)))
+#define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
+#define _g_variant_unref0(var) ((var == NULL) ? NULL : (var = (g_variant_unref (var), NULL)))
 typedef struct _Alias Alias;
 typedef struct _UserMessageHandler UserMessageHandler;
 
@@ -38,6 +39,8 @@ struct _NWBrowser
   /*<private>*/
   GList* aliases;
   gchar* app_prefix;
+  gchar* bus_address;
+  GVariant* extension_data;
   gchar* extension_dir;
 
   /*<private>*/
@@ -61,6 +64,8 @@ enum
 {
   prop_0,
   prop_app_prefix,
+  prop_bus_address,
+  prop_extension_data,
   prop_extension_dir,
   prop_number,
 };
@@ -97,8 +102,7 @@ static void nw_browser_class_dispose (GObject* pself)
   g_object_unref (((NWBrowser*) pself)->context);
   g_object_unref (((NWBrowser*) pself)->settings);
   g_object_unref (((NWBrowser*) pself)->user_content);
-
-  G_OBJECT_CLASS (nw_browser_parent_class)->dispose (pself);
+G_OBJECT_CLASS (nw_browser_parent_class)->dispose (pself);
 }
 
 static void _alias_free (gpointer pself)
@@ -111,8 +115,10 @@ static void _alias_free (gpointer pself)
 static void nw_browser_class_finalize (GObject* pself)
 {
   g_list_free_full (((NWBrowser*) pself)->aliases, _alias_free);
-
-  G_OBJECT_CLASS (nw_browser_parent_class)->finalize (pself);
+  _g_free0 (((NWBrowser*) pself)->app_prefix);
+  _g_variant_unref0 (((NWBrowser*) pself)->extension_data);
+  _g_free0 (((NWBrowser*) pself)->extension_dir);
+G_OBJECT_CLASS (nw_browser_parent_class)->finalize (pself);
 }
 
 static void nw_browser_class_get_property (GObject* pself, guint property_id, GValue* value, GParamSpec* pspec)
@@ -120,6 +126,8 @@ static void nw_browser_class_get_property (GObject* pself, guint property_id, GV
   switch (property_id)
     {
       case prop_app_prefix: g_value_set_string (value, nw_browser_get_app_prefix ((NWBrowser*) pself)); break;
+      case prop_bus_address: g_value_set_string (value, nw_browser_get_bus_address ((NWBrowser*) pself)); break;
+      case prop_extension_data: g_value_set_variant (value, nw_browser_get_extension_data ((NWBrowser*) pself)); break;
       case prop_extension_dir: g_value_set_string (value, nw_browser_get_extension_dir ((NWBrowser*) pself)); break;
       default: G_OBJECT_WARN_INVALID_PROPERTY_ID (pself, property_id, pspec);
     }}
@@ -131,10 +139,14 @@ static void nw_browser_class_set_property (GObject* pself, guint property_id, co
 
   switch (property_id)
     {
-      case prop_app_prefix: nw_browser_set_app_prefix ((NWBrowser*) pself, g_value_get_string (value)); break;
-      case prop_extension_dir: _g_free0 (self->extension_dir);
-                               if (g_value_get_string (value) != NULL)
-                                  self->extension_dir = g_value_dup_string (value);
+      case prop_app_prefix: nw_browser_set_app_prefix ((NWBrowser*) pself, g_value_get_string (value));
+        break;
+      case prop_bus_address: nw_browser_set_bus_address ((NWBrowser*) pself, g_value_get_string (value));
+        break;
+      case prop_extension_data: nw_browser_set_extension_data ((NWBrowser*) pself, g_value_get_variant (value));
+        break;
+      case prop_extension_dir: _g_free0 (self->extension_dir); if (g_value_get_string (value) != NULL)
+          self->extension_dir = g_value_dup_string (value);
         break;
       default: G_OBJECT_WARN_INVALID_PROPERTY_ID (pself, property_id, pspec);
     }}
@@ -168,8 +180,11 @@ static void nw_browser_class_init (NWBrowserClass* klass)
 
   const GParamFlags flags1 = G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS;
   const GParamFlags flags2 = G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS;
+  const GVariantType* vtype = G_VARIANT_TYPE_ANY;
 
   properties [prop_app_prefix] = g_param_spec_string ("app-prefix", "app-prefix", "app-prefix", NULL, flags1);
+  properties [prop_bus_address] = g_param_spec_string ("bus-address", "bus-address", "bus-address", NULL, flags1);
+  properties [prop_extension_data] = g_param_spec_variant ("extension-data", "extension-data", "extension-data", vtype, NULL, flags1);
   properties [prop_extension_dir] = g_param_spec_string ("extension-dir", "extension-dir", "extension-dir", NULL, flags2);
   g_object_class_install_properties (G_OBJECT_CLASS (klass), prop_number, properties);
 }
@@ -222,6 +237,18 @@ const gchar* nw_browser_get_app_prefix (NWBrowser* browser)
   return browser->app_prefix;
 }
 
+const gchar* nw_browser_get_bus_address (NWBrowser* browser)
+{
+  g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
+  return browser->bus_address;
+}
+
+GVariant* nw_browser_get_extension_data (NWBrowser* browser)
+{
+  g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
+  return browser->extension_data;
+}
+
 const gchar* nw_browser_get_extension_dir (NWBrowser* browser)
 {
   g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);
@@ -241,17 +268,40 @@ void nw_browser_set_app_prefix (NWBrowser* browser, const gchar* app_prefix)
   browser->app_prefix = g_strdup (app_prefix);
 }
 
+void nw_browser_set_bus_address (NWBrowser* browser, const gchar* bus_address)
+{
+  g_return_if_fail (NW_IS_BROWSER (browser));
+  g_return_if_fail (bus_address == NULL || g_dbus_is_address (bus_address));
+  _g_free0 (browser->bus_address);
+
+  browser->bus_address = ! bus_address ? NULL : g_strdup (bus_address);
+}
+
+void nw_browser_set_extension_data (NWBrowser* browser, GVariant* data)
+{
+  g_return_if_fail (NW_IS_BROWSER (browser));
+  _g_variant_unref0 (browser->extension_data);
+
+  browser->extension_data = ! data ? NULL : g_variant_ref_sink (data);
+}
+
 static void on_initialize_web_extensions (WebKitWebContext* context, NWBrowser* self)
 {
-  GVariantBuilder builder = G_VARIANT_BUILDER_INIT ((const GVariantType*) "(s)");
+  const gchar* addr = self->bus_address;
+  GVariant* data = self->extension_data;
 
-  g_variant_builder_add_value (&builder, g_variant_new_take_string (g_uuid_string_random ()));
+  GVariant* items [] =
+    {
+      g_variant_new_take_string (g_uuid_string_random ()),
+      g_variant_new_maybe ((const GVariantType*) ("s"), ! addr ? NULL : g_variant_new_string (addr)),
+      g_variant_new_maybe ((const GVariantType*) (! data ? "b" : NULL), ! data ? NULL : data),
+    };
 
-  GVariant* user_data = g_variant_builder_end (&builder);
+  GVariant* parameters = g_variant_new_tuple (items, G_N_ELEMENTS (items));
 
   if (self->extension_dir != NULL)
   webkit_web_context_set_web_process_extensions_directory (context, self->extension_dir);
-  webkit_web_context_set_web_process_extensions_initialization_user_data (context, user_data);
+  webkit_web_context_set_web_process_extensions_initialization_user_data (context, parameters);
 }
 
 static void on_uri_scheme_request_resource (WebKitURISchemeRequest* request, gpointer pself)

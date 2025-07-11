@@ -40,9 +40,13 @@ extern "C" {
   void nw_browser_add_alias (NWBrowser* browser, const gchar* alias, const gchar* value);
   WebKitWebView* nw_browser_create_view (NWBrowser* browser);
   const gchar* nw_browser_get_app_prefix (NWBrowser* browser);
+  const gchar* nw_browser_get_bus_address (NWBrowser* browser);
+  GVariant* nw_browser_get_extension_data (NWBrowser* browser);
   const gchar* nw_browser_get_extension_dir (NWBrowser* browser);
   NWBrowser* nw_browser_new (const gchar* extension_dir);
   void nw_browser_set_app_prefix (NWBrowser* browser, const gchar* app_prefix);
+  void nw_browser_set_bus_address (NWBrowser* browser, const gchar* bus_address);
+  void nw_browser_set_extension_data (NWBrowser* browser, GVariant* data);
 
 #if __cplusplus
 }

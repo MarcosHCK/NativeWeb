@@ -15,25 +15,21 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
-libipc = library \
+libprocess = static_library \
   (
-    'ipc',
-    c_args: [ '-DG_LOG_DOMAIN="Ipc"', '-DG_LOG_USE_STRUCTURED=1',
+    'process',
+    c_args: [ '-DG_LOG_DOMAIN="NativeWeb"', '-DG_LOG_USE_STRUCTURED=1',
       '-DBUILD_DIR="@0@"'.format (meson.current_build_dir ()),
       '-DSOURCE_DIR="@0@"'.format (meson.current_source_dir ()) ],
-    dependencies: [ config_dep, libglib_dep ],
+    dependencies: [ config_dep, libgio_dep ],
     include_directories: include_directories ('.'),
-    sources: [ 'ipccall.c', 'ipccall.h', 'ipcreply.c', 'ipcreply.h' ]
+    sources: [ 'processimpl.c', 'processimpl.h', 'processimpl.vapi', 'watcher.vala' ],
   )
 
-libipc_dep = declare_dependency \
+libprocess_dep = declare_dependency \
   (
+    dependencies: libgio_dep,
     include_directories: include_directories ('.'),
-    link_with: libipc,
-  )
-
-libipc_valadep = declare_dependency \
-  (
-    dependencies: libipc_dep,
-    sources: [ 'ipclow.vapi' ]
+    link_with: libprocess,
+    sources: [ 'processimpl.vapi' ],
   )

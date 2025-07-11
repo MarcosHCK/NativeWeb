@@ -15,21 +15,19 @@
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
 #include <config.h>
-#include <gmodule.h>
-#include <nativewebext.h>
-#include <webkit/webkit-web-process-extension.h>
+#include <sys/prctl.h>
+#include <signal.h>
+#include <process-unix.h>
 
-static void on_register (NWExtension* extension, JSCContext* context, WebKitWebPage* web_page)
+static void child_setup (gpointer user_data)
 {
-  (void) extension;
-  (void) context;
-  (void) web_page;
+  prctl (PR_SET_PDEATHSIG, SIGTERM);
+
+  /* mitigate race condition */
+  if (1 == getppid ()) _exit (1);
 }
 
-G_MODULE_EXPORT void webkit_web_process_extension_initialize_with_user_data (WebKitWebProcessExtension* wk_extension, const GVariant* user_data)
+void _nw_process_impl_setup_launcher (GSubprocessLauncher* launcher)
 {
-  g_info (PACKAGE_TARNAME " extension loaded");
-
-  gpointer object = nw_extension_new_default (wk_extension, user_data);
-  g_signal_connect (object, "register", G_CALLBACK (on_register), object);
+  g_subprocess_launcher_set_child_setup (launcher, child_setup, NULL, NULL);
 }

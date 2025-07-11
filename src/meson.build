@@ -18,24 +18,31 @@
 # libs
 
 subdir ('ipc')
+subdir ('process')
 
 # components
 
 subdir ('extension')
 subdir ('resources')
 
-supports = files ('delayed.vala', 'dragger.vala')
-widgets = files ('headerbar.vala', 'message.vala', 'window.vala')
+browserlib = files ('browser.c', 'browser.h', 'browser.vapi')
+supportlib = files ('daemon.vala', 'delayed.vala', 'dragger.vala')
+widgetlib = files ('headerbar.vala', 'message.vala', 'window.vala')
+
+libs = [ browserlib, supportlib, widgetlib ]
 
 libnativeweb = library \
   (
     'nativeweb',
-    c_args: [ '-DG_LOG_DOMAIN="NativeWeb"', '-DG_LOG_USE_STRUCTURED=1' ],
+    c_args: [ '-DG_LOG_DOMAIN="NativeWeb"', '-DG_LOG_USE_STRUCTURED=1',
+      '-DBUILD_DIR="@0@"'.format (meson.current_build_dir ()),
+      '-DSOURCE_DIR="@0@"'.format (meson.current_source_dir ()) ],
     dependencies: [ config_dep, libgtk4_dep, libwebkitgtk_dep,
       cc.find_library ('m', required: false),
       libipc_valadep,
+      libprocess_dep.as_link_whole (),
       libresources_dep.as_link_whole () ],
-    sources: [ 'application.vala', 'browser.c', 'browser.h', 'browser.vapi', supports, widgets ],
+    sources: [ 'application.vala', 'config.vapi', libs ],
   )
 
 libnativeweb_dep = declare_dependency \

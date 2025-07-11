@@ -55,6 +55,11 @@ config.set ('PACKAGE_VERSION_MINOR', git_version_minor)
 config.set ('PACKAGE_VERSION_MICRO', git_version_micro)
 config.set_quoted ('PACKAGE_VERSION_STAGE', git_version_stage)
 
+prefix = get_option ('prefix')
+
+config.set_quoted ('DATA_DIR', prefix / get_option ('datadir') / 'nativeweb')
+config.set_quoted ('LIB_DIR', prefix / get_option ('libdir') / 'nativeweb')
+config.set_quoted ('LIBEXEC_DIR', prefix / get_option ('libexecdir') / 'nativeweb')
 
 if get_option ('debug')
 

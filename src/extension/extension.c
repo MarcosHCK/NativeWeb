@@ -19,16 +19,27 @@
 
 static gpointer extension = NULL;
 gpointer nw_extension_get_default (void) G_GNUC_PURE;
-gpointer nw_extension_new_default (WebKitWebProcessExtension* wk_extension);
+gpointer nw_extension_new_default (WebKitWebProcessExtension* wk_extension, GVariant* parameters);
 
 GType nw_extension_get_type (void) G_GNUC_CONST;
 WebKitScriptWorld* nw_extension_get_script_world (gpointer extension);
 
-gpointer nw_extension_get_default (void)
-{
-  g_assert (NULL != extension);
-  return extension;
-}
+#define g_value_init_set(value,suffix,gtype,...) (G_GNUC_EXTENSION ({ \
+ ; \
+    GType __gtype = ((gtype)); \
+    GValue* __value = ((value)); \
+    g_value_init (__value, __gtype); \
+    g_value_set_##suffix (__value, __VA_ARGS__); \
+  }))
+
+#define g_value_unsets(values,n_values) (G_GNUC_EXTENSION ({ \
+ ; \
+    guint __i; \
+    const guint __n_values = ((n_values)); \
+    GValue* __values = ((values)); \
+ ; \
+    for (__i = 0; __i < __n_values; ++__i) g_value_unset (&__values [__i]); \
+  }))
 
 static void on_page_created (WebKitWebProcessExtension* wk_extension G_GNUC_UNUSED, WebKitWebPage* page, gpointer pself)
 {
@@ -43,8 +54,22 @@ static void on_page_created (WebKitWebProcessExtension* wk_extension G_GNUC_UNUS
   g_object_unref (context);
 }
 
-gpointer nw_extension_new_default (WebKitWebProcessExtension* wk_extension)
+static void __attribute__((destructor)) nw_extension_destroy_default (void)
 {
+  g_info ("Web-Process-Extension unloaded");
+  g_clear_object (&extension);
+}
+
+gpointer nw_extension_get_default (void)
+{
+  g_assert (NULL != extension);
+  return extension;
+}
+
+gpointer nw_extension_new_default (WebKitWebProcessExtension* wk_extension, GVariant* parameters)
+{
+  g_return_val_if_fail (WEBKIT_IS_WEB_PROCESS_EXTENSION (wk_extension), NULL);
+  g_return_val_if_fail (parameters == NULL || g_variant_check_format_string (parameters, "(smsm*)", FALSE), NULL);
 
   g_info ("Web-Process-Extension loaded");
 
@@ -52,33 +77,23 @@ gpointer nw_extension_new_default (WebKitWebProcessExtension* wk_extension)
     {
       GError* tmperr = NULL;
       GType gtype = nw_extension_get_type ();
-      const gchar* names [] = { "wk_extension" };
+      const gchar* names [] = { "parameters", "wk_extension" };
       GValue values [G_N_ELEMENTS (names)] = {0};
 
-      g_value_init_from_instance (&values [0], wk_extension);
+      g_value_init_set (&values [0], variant, G_TYPE_VARIANT, parameters);
+      g_value_init_from_instance (&values [1], wk_extension);
 
       gpointer object = g_object_new_with_properties (gtype, G_N_ELEMENTS (names), names, values);
       gboolean success = g_initable_init (G_INITABLE (object), NULL, &tmperr);
 
-      if ((g_value_unset (& values [0]), (void) success), G_UNLIKELY (tmperr == NULL))
+      if ((g_value_unsets (values, G_N_ELEMENTS (names)), (void) success), G_UNLIKELY (tmperr != NULL))
 
-        g_signal_connect_object (wk_extension, "page-created", G_CALLBACK (on_page_created), object, 0);
+        { g_error ("%s: %u: %s", g_quark_to_string (tmperr->domain), tmperr->code, tmperr->message);
+          g_clear_object (&object); }
       else
-        {
-          const guint code = tmperr->code;
-          const gchar* domain = g_quark_to_string (tmperr->domain);
-          const gchar* message = tmperr->message;
+        g_signal_connect_object (wk_extension, "page-created", G_CALLBACK (on_page_created), object, 0);
 
-          g_error ("%s: %u: %s", domain, code, message);
-          g_clear_object (&object);
-        }
       g_once_init_leave_pointer (&extension, object);
     }
 return extension;
-}
-
-static void __attribute__((destructor)) nw_extension_unref_default (void)
-{
-  g_info ("Web-Process-Extension unloaded");
-  g_clear_object (&extension);
 }

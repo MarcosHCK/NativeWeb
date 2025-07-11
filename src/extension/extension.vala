@@ -47,8 +47,14 @@ namespace NativeWeb
   public class Extension : GLib.Object, GLib.Initable
     {
 
+      public GLib.Variant parameters { get; construct; }
       public WebKit.ScriptWorld script_world { get; private set; }
       public WebKit.WebProcessExtension wk_extension { get; construct; }
+
+      public override void constructed ()
+        {
+          base.constructed ();
+        }
 
       public static extern unowned Extension get_default ();
 
@@ -88,7 +94,7 @@ namespace NativeWeb
           return true;
         }
 
-      public static extern unowned Extension new_default (WebKit.WebProcessExtension wk_extension);
+      public static extern unowned Extension new_default (WebKit.WebProcessExtension wk_extension, [CCode (type = "const GVariant*")] GLib.Variant? parameters);
 
       public signal void recv_message (string name, GLib.Variant @params);
       public signal void register (JSC.Context context, WebKit.WebPage web_page);
