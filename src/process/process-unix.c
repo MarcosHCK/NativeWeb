@@ -31,3 +31,8 @@ void _nw_process_impl_setup_launcher (GSubprocessLauncher* launcher)
 {
   g_subprocess_launcher_set_child_setup (launcher, child_setup, NULL, NULL);
 }
+
+void _nw_process_impl_terminate_gracefully (GSubprocess* subprocess)
+{
+  g_subprocess_send_signal (subprocess, SIGTERM);
+}

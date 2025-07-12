@@ -55,8 +55,27 @@ namespace NativeWeb
       public async bool terminate (GLib.Cancellable? cancellable = null) throws GLib.Error
         {
           _cancellable.cancel ();
+
+          if (! _died)
+            {
+              var source = new GLib.TimeoutSource (1000);
+
+              source.set_callback (terminate_anyway);
+              source.set_priority (GLib.Priority.HIGH);
+
+              ProcessImpl.terminate_gracefully (_subprocess);
+              source.attach ();
+
+              yield _subprocess.wait_async (cancellable);
+              source.destroy ();
+            }
+        return true;
+        }
+
+      public bool terminate_anyway ()
+        {
           _subprocess.force_exit ();
-        return _died ? true : yield _subprocess.wait_async (cancellable);
+        return GLib.Source.REMOVE;
         }
 
       public signal void terminated (GLib.Error? error)

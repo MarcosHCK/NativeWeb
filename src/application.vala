@@ -138,7 +138,9 @@ namespace NativeWeb
               dbus_unregister (connection, object_path);
             }
 
-          if (null != _daemon) base.hold ();
+          GLib.MainLoop? loop = null;
+
+          if (null != _daemon) loop = new GLib.MainLoop ();
 
           if (null != _daemon) _daemon.terminate.begin (null, (o, res) =>
             {
@@ -153,8 +155,10 @@ namespace NativeWeb
                   return;
                 }
 
-              base.release ();
+              loop.quit ();
             });
+
+          loop?.run ();
         }
 
       public override void startup ()

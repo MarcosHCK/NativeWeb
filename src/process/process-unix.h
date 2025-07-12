@@ -23,6 +23,7 @@ extern "C" {
 #endif // __cplusplus
 
   G_GNUC_INTERNAL void _nw_process_impl_setup_launcher (GSubprocessLauncher* launcher);
+  G_GNUC_INTERNAL void _nw_process_impl_terminate_gracefully (GSubprocess* subprocess);
 
 #if __cplusplus
 }

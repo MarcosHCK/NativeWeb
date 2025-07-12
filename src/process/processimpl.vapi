@@ -18,6 +18,8 @@
 namespace NativeWeb { namespace ProcessImpl
 {
 
-  [CCode (cheader_filename = "process/processimpl.h", cname = "_nw_process_impl_setup_launcher")]
+  [CCode (cheader_filename = "processimpl.h", cname = "_nw_process_impl_setup_launcher")]
   internal static void setup_launcher (GLib.SubprocessLauncher launcher);
+  [CCode (cheader_filename = "processimpl.h", cname = "_nw_process_impl_terminate_gracefully")]
+  internal static void terminate_gracefully (GLib.Subprocess subprocess);
 } }
