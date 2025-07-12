@@ -14,17 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <config.h>
-#include <gmodule.h>
-#include <nativewebext.h>
-#include <webkit/webkit-web-process-extension.h>
+[CCode (cprefix = "NWA", lower_case_cprefix = "nwa_")]
 
-void _nwa_extension_on_register (NWExtension* extension, JSCContext* context, WebKitWebPage* web_page);
-
-G_MODULE_EXPORT void webkit_web_process_extension_initialize_with_user_data (WebKitWebProcessExtension* wk_extension, const GVariant* user_data)
+namespace NativeWebApp
 {
-  g_info (PACKAGE_TARNAME " extension loaded");
 
-  gpointer object = nw_extension_new_default (wk_extension, user_data);
-  g_signal_connect (object, "register", G_CALLBACK (_nwa_extension_on_register), object);
+  [CCode (cname = "_nwa_extension_on_register")]
+
+  public static void on_register (NativeWeb.Extension extension, JSC.Context context, WebKit.WebPage web_page)
+    {
+      InterfaceFacade.register (context);
+    }
 }

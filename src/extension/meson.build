@@ -19,7 +19,7 @@
 
 params = files ('params.c', 'params.h', 'params.vapi')
 promise = files ('promise.c', 'promise.h', 'promise.vapi')
-proxy = files ('iinvocable.vala', 'isignalable.vala', 'proxybase.vala')
+proxy = files ('iinvocable.vala', 'isignalable.h', 'isignalable.vala', 'proxybase.vala')
 
 apis = [ params, promise, proxy ]
 

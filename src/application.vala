@@ -41,6 +41,7 @@ namespace NativeWeb
       private GLib.Cancellable? _boot_cancellable = null;
       private GLib.Queue<DeferredUrl?> _deferred = null;
       private bool _register_complete = false;
+      private uint _registration_id = 0;
       private class string? _extension_dir = null;
       private class bool _launch_bus = true;
       private bool ready { get; private set; default = false; }
@@ -61,12 +62,16 @@ namespace NativeWeb
               var program = GLib.Environment.get_variable (variable);
 
               _boot_cancellable = new GLib.Cancellable ();
-              (_daemon = new Daemon (null, program)).daemon_terminated.connect (on_daemon_terminated);
+              _daemon = new Daemon (null, program);
+
+              _daemon.daemon_terminated.connect (on_daemon_terminated);
             }
 
+          var prefix = resource_base_path;
+
           _browser = new NativeWeb.Browser (_extension_dir);
-          _browser.add_alias ("^/logo.svg$", @"$resource_base_path/icons/scalable/apps/$application_id.svg");
-          _browser.app_prefix = resource_base_path;
+          _browser.add_alias ("^/logo.svg$", @"$prefix/icons/scalable/apps/$application_id.svg");
+          _browser.app_prefix = prefix;
           _deferred = new GLib.Queue<DeferredUrl?> ();
         }
 
@@ -93,6 +98,24 @@ namespace NativeWeb
       public new virtual void dbus_unregister (GLib.DBusConnection connection, string object_path)
         {
           _browser.bus_address = null;
+        }
+
+      private void name_acquired_closure ()
+        {
+          ready = true;
+          for (DeferredUrl? _url; (_url = _deferred.pop_head ()) != null;)
+            open_url (_url.url, _url.hint);
+          base.release ();
+        }
+
+      private void name_lost_closure ()
+        {
+
+          if (_ready) ready = false; else
+            {
+              critical ("Can't not own the bus name");
+              quit ();
+            }
         }
 
       private void on_daemon_terminated (GLib.Error? e)
@@ -133,7 +156,7 @@ namespace NativeWeb
           if (null != _daemon && _register_complete)
             {
               var connection = _connection;
-              var object_path = "/org/hck/nativeweb/browser";
+              var object_path = "/" + (application_id?.replace (".", "/") ?? "");
 
               dbus_unregister (connection, object_path);
             }
@@ -183,7 +206,9 @@ namespace NativeWeb
 
               boxerize_address (_daemon.address);
 
-              var object_path = "/org/hck/nativeweb/browser";
+              unowned var flags = GLib.BusNameOwnerFlags.NONE;
+              unowned var name = application_id;
+              var object_path = "/" + (application_id?.replace (".", "/") ?? "");
 
               try { _register_complete = dbus_register (_connection, object_path); } catch (GLib.Error e)
                 {
@@ -197,11 +222,7 @@ namespace NativeWeb
                   return;
                 }
 
-              ready = (_register_complete = true);
-
-              for (DeferredUrl? _url; (_url = _deferred.pop_head ()) != null;)
-                open_url (_url.url, _url.hint);
-              base.release ();
+              _registration_id = GLib.Bus.own_name_on_connection (_connection, name, flags, name_acquired_closure, name_lost_closure);
             });
         }
 

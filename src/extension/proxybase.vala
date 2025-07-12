@@ -19,29 +19,87 @@
 namespace NativeWeb
 {
 
-  public abstract class ProxyBase : GLib.Object, IInvocable, ISignalable
+  public class Factory : GLib.Object
+    {
+    }
+
+  public class ProxyBase : GLib.Object, IInvocable, ISignalable
     {
 
-      public string header { get; protected set; }
-      public Extension extension { get { return Extension.get_default (); } }
+      public GLib.DBusProxy? proxiee { get; construct; }
+      public int timeout_msec { get; set; default = -1; }
 
-      construct
+      public ProxyBase (GLib.DBusProxy? proxiee = null)
         {
-          header = _G_TYPE_FROM_INSTANCE ().name ();
-          extension.recv_message.connect (on_recv_message);
+          Object (proxiee: proxiee);
         }
 
-      [CCode (cheader_filename = "glib.h", cname = "G_TYPE_FROM_INSTANCE")]
-      private extern GLib.Type _G_TYPE_FROM_INSTANCE ();
-
-      private void on_recv_message (string name, GLib.Variant message)
+      public static JSC.Value add_default_ctor (JSC.Class jsc_klass, JSC.Context context)
         {
-          if (name == _header) consume (message);
+          var name = jsc_klass.get_name ();
+          var ctor = jsc_klass.add_constructor (name, () => new ProxyBase (), typeof (ProxyBase));
+          context.set_value (jsc_klass.get_name (), ctor);
+        return ctor;
         }
 
-      protected async GLib.Variant? send (GLib.Variant _message) throws GLib.Error
+      public static unowned JSC.Class add_factory (JSC.Class jsc_klass, JSC.Context context, string? name = null)
         {
-          return yield extension.send_message (_header, _message);
+          unowned var destroy_notify = (GLib.DestroyNotify) Object.unref;
+          unowned var parent_class = (JSC.Class?) null;
+          unowned var vtable = (JSC.ClassVTable?) null;
+
+          name = name ?? @"$(jsc_klass.get_name ())Factory";
+
+          unowned var klass = (JSC.Class) context.register_class (name, parent_class, vtable, destroy_notify);
+
+          var instance = new Factory ();
+          var factory = new JSC.Value.object (context, (owned) instance, klass);
+
+          context.set_value (klass.get_name (), factory);
+        return klass;
+        }
+
+      static string construct_signature (GLib.DBusArgInfo[] args)
+        {
+          var builder = new GLib.StringBuilder ("(");
+
+          foreach (unowned var info in args) builder.append (info.signature);
+                                             builder.append_c (')');
+        return builder.free_and_steal ();
+        }
+
+      protected async GLib.Variant? invoke (string method_name, GLib.Variant? parameters) throws GLib.Error
+        {
+          if (unlikely (proxiee == null))
+           throw new GLib.IOError.NOT_CONNECTED ("proxy object is not connected");
+
+          var flags1 = GLib.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION;
+          var flags2 = GLib.DBusCallFlags.NO_AUTO_START;
+          var flags = flags1 | flags2;
+        return yield proxiee.call (method_name, parameters, flags, timeout_msec);
+        }
+
+      public static unowned JSC.Class register (JSC.Context context, GLib.DBusInterfaceInfo dbus_info, string? name = null)
+        {
+          unowned var destroy_notify = (GLib.DestroyNotify) Object.unref;
+          unowned var parent_class = (JSC.Class?) null;
+          unowned var vtable = (JSC.ClassVTable?) null;
+
+          name = name ?? dbus_info.name;
+
+          unowned var klass = (JSC.Class) context.register_class (name, parent_class, vtable, destroy_notify);
+
+          foreach (unowned var info in dbus_info.methods)
+            {
+              var signature = construct_signature (info.in_args);
+              ((IInvocable)).register (klass, info.name, info.name, signature);
+            }
+
+          foreach (unowned var info in dbus_info.signals)
+            {
+              ((ISignalable)).register (klass, info.name, info.name);
+            }
+        return klass;
         }
     }
 }

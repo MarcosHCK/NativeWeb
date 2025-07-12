@@ -22,6 +22,8 @@ namespace NativeWebApp
   public class Application : NativeWeb.Application
     {
 
+      private Interface example;
+
       construct
         {
           add_actions (this);
@@ -74,6 +76,20 @@ namespace NativeWebApp
           browser.add_alias ("^/([-_a-zA-Z]+)$", @"$resource_base_path/page/\\1.html");
           browser.add_alias ("^/$", @"$resource_base_path/page/index.html");
           browser.app_prefix = @"$resource_base_path/page";
+        }
+
+      uint interface_id;
+
+      public override bool dbus_register (GLib.DBusConnection connection, string object_path) throws GLib.Error
+        {
+          base.dbus_register (connection, object_path);
+          interface_id = connection.register_object<Interface> (object_path, example = new InterfaceImpl ());
+        return true;
+        }
+
+      public override void dbus_unregister (GLib.DBusConnection connection, string object_path)
+        {
+          connection.unregister_object (interface_id);
         }
 
       public override void open_url (GLib.File url, string hint)

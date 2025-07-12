@@ -25,9 +25,10 @@ shared_module \
   (
     'webappext',
     c_args: [ '-DG_LOG_DOMAIN="NativeWebAppExt"', '-DG_LOG_USE_STRUCTURED=1' ],
-    dependencies: [ config_dep, libnativewebext_dep,
+    dependencies: [ config_dep, libinterface_dep, libnativewebext_valadep,
       dependency ('gmodule-2.0', required: true) ],
-    sources: [ 'extension.c', webkitext_hdr ],
+    install: false,
+    sources: [ 'extension.c', 'extension.vala', 'interface.vala', webkitext_hdr ],
   )
 
 libextension_dep = declare_dependency \

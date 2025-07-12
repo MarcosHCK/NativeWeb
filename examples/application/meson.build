@@ -15,6 +15,22 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
+libinterface = library \
+  (
+    'interface',
+    c_args: [ '-DG_LOG_DOMAIN="NativeWebApp"', '-DG_LOG_USE_STRUCTURED=1' ],
+    dependencies: [ config_dep, libgio_dep ],
+    include_directories: include_directories ('.'),
+    install: false,
+    sources: [ 'interface.vala' ],
+  )
+
+libinterface_dep = declare_dependency \
+  (
+    include_directories: include_directories ('.'),
+    link_with: libinterface
+  )
+
 subdir ('app')
 subdir ('extension')
 subdir ('resources')
@@ -23,7 +39,8 @@ executable \
   (
     'application',
     c_args: [ '-DG_LOG_DOMAIN="NativeWebApp"', '-DG_LOG_USE_STRUCTURED=1' ],
-    dependencies: [ config_dep, libextension_dep, libgtk4_dep, libnativeweb_valadep, resources_dep ],
+    dependencies: [ config_dep, libextension_dep, libgtk4_dep, libinterface_dep, libnativeweb_valadep, resources_dep ],
     include_directories: include_directories ('.'),
+    install: false,
     sources: [ 'application.vala', 'config.vapi' ],
   )

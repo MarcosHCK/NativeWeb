@@ -50,7 +50,7 @@ namespace NativeWeb
       private string _bus_address;
       private string _uuid;
 
-      public GLib.DBusConnection connection { get; }
+      public GLib.DBusConnection bus { get; }
       public GLib.Variant? extension_data { get; }
       public GLib.Variant parameters { construct; }
       public WebKit.ScriptWorld script_world { get; private set; }
@@ -102,7 +102,7 @@ namespace NativeWeb
           unowned var flags2 = GLib.DBusConnectionFlags.MESSAGE_BUS_CONNECTION;
           unowned var flags = flags1 | flags2;
 
-          _connection = new GLib.DBusConnection.for_address_sync (address, flags, null, null);
+          _bus = new GLib.DBusConnection.for_address_sync (address, flags, null, null);
           return true;
         }
 

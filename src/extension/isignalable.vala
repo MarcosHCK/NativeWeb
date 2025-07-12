@@ -36,18 +36,13 @@ namespace NativeWeb
             }
         }
 
-      private ulong add_signal_handler (string signal_name, JSC.Value value)
+      private ulong add_signal_handler (string signal_name, JSC.Value func)
         {
-
-          return recv_signal.connect ((sn, @params) =>
-            {
-              var context = value.context;
-
-              if (sn == signal_name)
-
-                value.function_callv (params_unpack (params, context).data);
-            });
+          return add_signal_handler_ (this, signal_name, func);
         }
+
+      [CCode (cheader_filename = "isignalable.h", cname = "_nw_isignalable_recv_signal_connect")]
+      static extern ulong add_signal_handler_ (GLib.Object? @this, string signal_name, JSC.Value func);
 
       public void consume (GLib.Variant message)
         {
@@ -57,7 +52,7 @@ namespace NativeWeb
           recv_signal (signal_name, _params);
         }
 
-      private static ulong on_signal_connect (GenericArray<JSC.Value> a, SignalConnector connector)
+      static ulong on_signal_connect (GenericArray<JSC.Value> a, SignalConnector connector)
         {
           ulong id = 0;
           if (a.length < 1 || ! a [0].is_function ())
