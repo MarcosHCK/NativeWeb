@@ -21,6 +21,7 @@ declare global
   class Interface
     {
       RandomUUID (): Promise<string>;
+      Store: string;
     }
 
   namespace InterfaceFactory

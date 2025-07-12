@@ -16,32 +16,46 @@
  */
 import { Button, Group, Stack } from '@mantine/core'
 import { useEffect, useState } from 'react'
-import { PiRocketLaunch } from 'react-icons/pi'
+import { PiExport, PiFloppyDisk, PiRocketLaunch } from 'react-icons/pi'
 
 export default function Page ()
 {
   const [ obj, setObj ] = useState<null | Interface> (null)
-  const [ message, setMessage ] = useState ('Querying interface proxy')
+  const [ notice, setNotice ] = useState<string> ('Querying interface proxy')
+  const [ value1, setValue1 ] = useState<string> ('query random uuid')
+  const [ value2, setValue2 ] = useState<string> ('query stored string')
 
   useEffect (() =>
     {
-      InterfaceFactory.create ().then (setObj)
-                                .catch (e => setMessage (e.toString ()))
+      InterfaceFactory.create ().then (v => setObj (v))
+                                .catch (e => setNotice (e.toString ()))
     }, [])
 
   return ! obj
 
-    ? <p>{ message }</p>
+    ? <p>{ notice }</p>
     : <Stack>
 
         <p>Application showcase</p>
 
         <Group>
-          <Button onClick={() => obj.RandomUUID ().then (setMessage)
-                                                  .catch (e => setMessage (e.toString ())) }
-                  rightSection={ <p>{ message }</p> }
+          <Button onClick={() => obj.RandomUUID ().then (v => setValue1 (v))
+                                                  .catch (e => setValue1 (e.toString ())) }
+                  rightSection={ <p>{ value1 }</p> }
                   variant='outline'>
             <PiRocketLaunch />
+          </Button>
+        </Group>
+
+        <Group>
+          <Button onClick={() => obj.Store = value1}
+                  variant='outline'>
+            <PiFloppyDisk />
+          </Button>
+          <Button onClick={() => setValue2 (obj.Store)}
+                  rightSection={ <p>{ value2 }</p> }
+                  variant='outline'>
+            <PiExport />
           </Button>
         </Group>
       </Stack>

@@ -55,7 +55,7 @@ namespace NativeWeb
           return params_unpack (params, context);
         }
 
-      protected abstract async GLib.Variant? invoke (string method, GLib.Variant? parameters) throws GLib.Error;
+      public abstract async GLib.Variant? invoke (string method, GLib.Variant? parameters) throws GLib.Error;
 
       public static void register (JSC.Class klass, string field_name, string method_name, string signature, owned ResultCollector? collector = null)
         {

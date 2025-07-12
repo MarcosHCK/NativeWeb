@@ -24,6 +24,7 @@ namespace NativeWebApp
   public interface Interface : GLib.Object
     {
       [DBus (name = "RandomUUID")] public abstract string random_uuid () throws GLib.Error;
+      [DBus (name = "Store")] public abstract string store { owned get; set; }
 
       [CCode (cname = "const GDBusInterfaceInfo", cheader_filename = "gio/gio.h")]
       extern struct Nothing { }
@@ -48,5 +49,8 @@ namespace NativeWebApp
         {
           return GLib.Uuid.string_random ();
         }
+
+      private string _store = "";
+      public string store { owned get { return _store; } set { _store = value; } }
     }
 }

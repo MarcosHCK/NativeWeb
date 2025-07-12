@@ -23,7 +23,7 @@ namespace NativeWeb
     {
     }
 
-  public class ProxyBase : GLib.Object, IInvocable, ISignalable
+  public class ProxyBase : GLib.Object, IAttributable, IInvocable, ISignalable
     {
 
       public GLib.DBusProxy? proxiee { get; construct; }
@@ -73,10 +73,22 @@ namespace NativeWeb
           if (unlikely (proxiee == null))
            throw new GLib.IOError.NOT_CONNECTED ("proxy object is not connected");
 
-          var flags1 = GLib.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION;
-          var flags2 = GLib.DBusCallFlags.NO_AUTO_START;
-          var flags = flags1 | flags2;
+          unowned var flags1 = GLib.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION;
+          unowned var flags2 = GLib.DBusCallFlags.NO_AUTO_START;
+          unowned var flags = flags1 | flags2;
         return yield proxiee.call (method_name, parameters, flags, timeout_msec);
+        }
+
+      protected GLib.Variant read_property (string property_name) throws GLib.Error
+        {
+          if (unlikely (proxiee == null))
+           throw new GLib.IOError.NOT_CONNECTED ("proxy object is not connected");
+
+          GLib.Variant? value;
+
+          if (unlikely ((value = proxiee.get_cached_property (property_name)) == null))
+            throw new GLib.IOError.INVALID_DATA ("uncached property");
+        return value;
         }
 
       public static unowned JSC.Class register (JSC.Context context, GLib.DBusInterfaceInfo dbus_info, string? name = null)
@@ -95,11 +107,59 @@ namespace NativeWeb
               ((IInvocable)).register (klass, info.name, info.name, signature);
             }
 
+          foreach (unowned var info in dbus_info.properties)
+            {
+              unowned var signature = info.signature;
+              ((IAttributable)).register (klass, info.name, info.name, signature);
+            }
+
           foreach (unowned var info in dbus_info.signals)
             {
               ((ISignalable)).register (klass, info.name, info.name);
             }
         return klass;
+        }
+
+      protected bool write_property (string property_name, GLib.Variant value) throws GLib.Error
+        {
+          if (unlikely (proxiee == null))
+           throw new GLib.IOError.NOT_CONNECTED ("proxy object is not connected");
+
+          proxiee.set_cached_property (property_name, value);
+
+          write_property_.begin (property_name, value, (o, res) =>
+            {
+
+              try { ((ProxyBase) o).write_property_.end (res); } catch (GLib.Error e)
+                {
+                  unowned var code = e.code;
+                  unowned var domain = e.domain.to_string ();
+                  unowned var message = e.message.to_string ();
+
+                  critical ("failed to write property '%s': %s: %u: %s", property_name, domain, code, message);
+                }
+            });
+        return true;
+        }
+
+      protected async bool write_property_ (string property_name, GLib.Variant value) throws GLib.Error
+        {
+          unowned var flags1 = GLib.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION;
+          unowned var flags2 = GLib.DBusCallFlags.NO_AUTO_START;
+          unowned var flags = flags1 | flags2;
+          unowned var info = proxiee.get_interface_info ();
+          unowned var method_name = "org.freedesktop.DBus.Properties.Set";
+
+          if (unlikely (info == null))
+            throw new GLib.IOError.INVALID_DATA ("underlying proxy has not info");
+
+          var _interface_name = new GLib.Variant.string (info.name);
+          var _property_name = new GLib.Variant.string (property_name);
+          var _value = new GLib.Variant.variant (value);
+          var parameters = new GLib.Variant.tuple ({ _interface_name, _property_name, _value });
+
+          yield proxiee.call (method_name, parameters, flags, timeout_msec);
+        return true;
         }
     }
 }
