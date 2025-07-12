@@ -27,8 +27,11 @@ namespace NativeWeb
       public string? bus_address { get; set; }
       public GLib.Variant? extension_data { get; set; }
       public string extension_dir { get; construct; }
+
       public Browser (string? extension_dir);
+
       public void add_alias (string alias, string value);
+      public void add_path_to_sandbox (string path, bool read_only = false);
       [CCode (returns_floating_reference = true)]
       public WebKit.WebView create_view ();
     }}

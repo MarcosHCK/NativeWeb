@@ -218,6 +218,14 @@ void nw_browser_add_alias (NWBrowser* browser, const gchar* alias, const gchar* 
     }
 }
 
+void nw_browser_add_path_to_sandbox (NWBrowser* browser, const gchar* path, gboolean read_only)
+{
+  g_return_if_fail (NW_IS_BROWSER (browser));
+  g_return_if_fail (path != NULL);
+
+  webkit_web_context_add_path_to_sandbox (browser->context, path, read_only);
+}
+
 WebKitWebView* nw_browser_create_view (NWBrowser* browser)
 {
   g_return_val_if_fail (NW_IS_BROWSER (browser), NULL);

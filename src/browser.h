@@ -38,6 +38,7 @@ extern "C" {
   GQuark nw_browser_error_quark (void) G_GNUC_CONST;
 
   void nw_browser_add_alias (NWBrowser* browser, const gchar* alias, const gchar* value);
+  void nw_browser_add_path_to_sandbox (NWBrowser* browser, const gchar* path, gboolean read_only);
   WebKitWebView* nw_browser_create_view (NWBrowser* browser);
   const gchar* nw_browser_get_app_prefix (NWBrowser* browser);
   const gchar* nw_browser_get_bus_address (NWBrowser* browser);

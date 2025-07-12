@@ -17,6 +17,7 @@
 
 # libs
 
+subdir ('dbus')
 subdir ('ipc')
 subdir ('process')
 
@@ -39,6 +40,7 @@ libnativeweb = library \
       '-DSOURCE_DIR="@0@"'.format (meson.current_source_dir ()) ],
     dependencies: [ config_dep, libgtk4_dep, libwebkitgtk_dep,
       cc.find_library ('m', required: false),
+      libdbus_dep.as_link_whole (),
       libipc_valadep,
       libprocess_dep.as_link_whole (),
       libresources_dep.as_link_whole () ],

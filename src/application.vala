@@ -70,6 +70,20 @@ namespace NativeWeb
           _deferred = new GLib.Queue<DeferredUrl?> ();
         }
 
+      private void boxerize_address (string address)
+        {
+          var addr = DBusAddress (_daemon.address);
+          string path;
+
+          switch (addr.transport)
+            {
+              case "nonce-tcp": if (null != (path = addr.lookup_option ("noncefile")))
+                _browser.add_path_to_sandbox (path, true); break;
+              case "unix": if (null != (path = addr.lookup_option ("path")))
+                _browser.add_path_to_sandbox (path, true); break;
+            }
+        }
+
       public new virtual bool dbus_register (GLib.DBusConnection connection, string object_path) throws GLib.Error
         {
           _browser.bus_address = _daemon.address;
@@ -162,6 +176,8 @@ namespace NativeWeb
                   base.release ();
                   return;
                 }
+
+              boxerize_address (_daemon.address);
 
               var object_path = "/org/hck/nativeweb/browser";
 

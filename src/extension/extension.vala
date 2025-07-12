@@ -47,13 +47,19 @@ namespace NativeWeb
   public class Extension : GLib.Object, GLib.Initable
     {
 
-      public GLib.Variant parameters { get; construct; }
+      private string _bus_address;
+      private string _uuid;
+
+      public GLib.DBusConnection connection { get; }
+      public GLib.Variant? extension_data { get; }
+      public GLib.Variant parameters { construct; }
       public WebKit.ScriptWorld script_world { get; private set; }
       public WebKit.WebProcessExtension wk_extension { get; construct; }
 
       public override void constructed ()
         {
           base.constructed ();
+          _parameters.get ("(smsm*)", &_uuid, &_bus_address, &_extension_data);
         }
 
       public static extern unowned Extension get_default ();
@@ -89,8 +95,14 @@ namespace NativeWeb
         {
           script_world = WebKit.ScriptWorld.get_default ();
           script_world.window_object_cleared.connect (on_window_object_cleared);
-
           wk_extension.user_message_received.connect (on_user_message_received);
+
+          unowned var address = _bus_address;
+          unowned var flags1 = GLib.DBusConnectionFlags.AUTHENTICATION_CLIENT;
+          unowned var flags2 = GLib.DBusConnectionFlags.MESSAGE_BUS_CONNECTION;
+          unowned var flags = flags1 | flags2;
+
+          _connection = new GLib.DBusConnection.for_address_sync (address, flags, null, null);
           return true;
         }
 
