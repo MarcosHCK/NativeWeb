@@ -19,31 +19,6 @@
 namespace NativeWeb
 {
 
-  internal static string gerror_to_message (GLib.Error e, out string? name = null)
-    {
-
-      if (e.domain != GLib.DBusError.quark () || ! GLib.DBusError.is_remote_error (e))
-        {
-          name = "GError";
-          return @"$(e.domain): $(e.code): $(e.message)";
-        }
-      else
-        {
-          name = "GDBusError";
-          GLib.DBusError.strip_remote_error (e);
-
-          return GLib.DBusError.get_remote_error (e);
-        }
-    }
-
-  internal static void throw_gerror (JSC.Context context, GLib.Error e)
-    {
-      string name;
-      string message = gerror_to_message (e, out name);
-
-      context.throw_with_name (name, message);
-    }
-
   public class Extension : GLib.Object, GLib.Initable
     {
 
@@ -78,7 +53,7 @@ namespace NativeWeb
         }
       catch (GLib.Error e)
         {
-          throw_gerror (context, e);
+          Error.throw (context, e);
         }}
 
       static void exception_handler (JSC.Context context, JSC.Exception exception)
@@ -134,6 +109,7 @@ namespace NativeWeb
           context.push_exception_handler (exception_handler);
 
           BrowserNamespace.register (context, web_page);
+          Error.register (context);
           LogLib.register (context);
           Utf8Namespace.register (context);
 

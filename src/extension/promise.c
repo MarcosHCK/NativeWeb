@@ -112,15 +112,18 @@ void nw_promise_reject (NWPromise* promise, JSCValue* value)
   finish (promise, value, promise->reject);
 }
 
-gchar* nw_gerror_to_message (GError* error, gchar** name);
+typedef struct _NWError NWError;
+NWError* nw_error_new_from_gerror (GError* error);
+JSCValue* nw_error_to_value (NWError* error, JSCContext* context);
 
 void nw_promise_reject_gerror (NWPromise* promise, GError* error)
 {
   g_return_if_fail (promise != NULL);
   g_return_if_fail (error != NULL);
-  gchar* message = nw_gerror_to_message (error, NULL);
-  JSCValue* value_ = jsc_value_new_string (promise->context, message);
-  g_free (message);
+
+  NWError* error_ = nw_error_new_from_gerror (error);
+  JSCValue* value_ = nw_error_to_value (error_, promise->context);
+  g_object_unref (error_);
 
   finish (promise, value_, promise->reject);
   g_object_unref (value_);

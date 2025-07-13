@@ -28,7 +28,7 @@ namespace NativeWeb
           GLib.Variant param;
 
           try { param = read_property (property_name); } catch (GLib.Error e)
-            { throw_gerror (context, e); return null; }
+            { Error.throw (context, e); return null; }
         return param_unpack (param, context);
         }
 
@@ -38,7 +38,7 @@ namespace NativeWeb
           var value = param_pack (param, signature);
 
           try { write_property (property_name, value); } catch (GLib.Error e)
-            { throw_gerror (context, e); }
+            { Error.throw (context, e); }
         }
 
       public abstract GLib.Variant read_property (string name) throws GLib.Error;
