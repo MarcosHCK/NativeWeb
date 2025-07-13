@@ -17,7 +17,7 @@
 #include <config.h>
 #include <sys/prctl.h>
 #include <signal.h>
-#include <process-unix.h>
+#include <processimpl.h>
 
 static void child_setup (gpointer user_data)
 {

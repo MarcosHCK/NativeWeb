@@ -31,8 +31,12 @@ namespace NativeWebApp
         {
 
           unowned var extension = NativeWeb.Extension.get_default ();
-          unowned var connection = extension.bus;
           unowned var context = JSC.Context.get_current ();
+          unowned var connection = extension.bus;
+
+          if (unlikely (null == connection))
+            context.throw ("Extension is not connected to application bus");
+
           unowned var flags = GLib.DBusProxyFlags.NONE;
           unowned var name = "org.hck.nativeweb.app";
           unowned var object_path = "/org/hck/nativeweb/app";

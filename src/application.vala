@@ -187,7 +187,7 @@ namespace NativeWeb
       public override void startup ()
         {
           base.startup ();
-          if (null != _daemon) base.hold ();
+          if (null != _daemon) base.hold (); else _ready = true;
 
           if (null != _daemon) _daemon.launch.begin (_boot_cancellable, (o, res) =>
             {

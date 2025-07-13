@@ -18,11 +18,15 @@
 #define __NW_PROCESS__ 1
 #include <glib.h>
 
-#ifdef G_OS_UNIX
-# include <process-unix.h>
-#endif // G_OS_UNIX
-#ifdef G_OS_WIN32
-# include <process-win32.h>
-#endif // G_OS_WIN32
+#if __cplusplus
+extern "C" {
+#endif // __cplusplus
+
+  G_GNUC_INTERNAL void _nw_process_impl_setup_launcher (GSubprocessLauncher* launcher);
+  G_GNUC_INTERNAL void _nw_process_impl_terminate_gracefully (GSubprocess* subprocess);
+
+#if __cplusplus
+}
+#endif // __cplusplus
 
 #endif // __NW_PROCESS__
