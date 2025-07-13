@@ -15,7 +15,7 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
-libipc = library \
+libipc = static_library \
   (
     'ipc',
     c_args: [ '-DG_LOG_DOMAIN="Ipc"', '-DG_LOG_USE_STRUCTURED=1',

@@ -31,5 +31,10 @@ libprocess_dep = declare_dependency \
     dependencies: libgio_dep,
     include_directories: include_directories ('.'),
     link_with: libprocess,
-    sources: [ 'processimpl.vapi' ],
+  )
+
+libprocess_valadep = declare_dependency \
+  (
+    dependencies: libprocess_dep,
+    sources: 'processimpl.vapi'
   )

@@ -22,11 +22,8 @@ declare global
     {
       RandomUUID (): Promise<string>;
       Store: string;
-    }
 
-  namespace InterfaceFactory
-    {
-      async function create (): Promise<Interface>;
+      static async create (): Promise<Interface>;
     }
 }
 

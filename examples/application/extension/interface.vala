@@ -27,9 +27,8 @@ namespace NativeWebApp
           Object (proxiee: (GLib.DBusProxy) proxiee);
         }
 
-      static JSC.Value constructor (JSC.Class jsc_class)
+      static JSC.Value constructor (JSC.Class? jsc_class)
         {
-
           unowned var extension = NativeWeb.Extension.get_default ();
           unowned var context = JSC.Context.get_current ();
           unowned var connection = extension.bus;
@@ -58,9 +57,8 @@ namespace NativeWebApp
 
           unowned var info = Interface.get_interface_info ();
           unowned var klass = NativeWeb.ProxyBase.register (context, info, "Interface");
-          unowned var factory_klass = add_factory (klass, context);
-          add_default_ctor (klass, context);
-          factory_klass.add_method ("create", (s, a) => constructor (klass), typeof (JSC.Value));
+          var ctor = add_default_ctor (klass, context);
+          add_ctor_factory (ctor, context, "create", a => constructor (klass));
         return klass;
         }
     }

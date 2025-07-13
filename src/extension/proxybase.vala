@@ -29,6 +29,9 @@ namespace NativeWeb
       public GLib.DBusProxy? proxiee { get; construct; }
       public int timeout_msec { get; set; default = -1; }
 
+      [CCode (scope = "notify", type = "GCallback")]
+      public delegate JSC.Value CtorFactoryCb (GenericArray<JSC.Value> args);
+
       public ProxyBase (GLib.DBusProxy? proxiee = null)
         {
           Object (proxiee: proxiee);
@@ -42,21 +45,16 @@ namespace NativeWeb
         return ctor;
         }
 
-      public static unowned JSC.Class add_factory (JSC.Class jsc_klass, JSC.Context context, string? name = null)
+      [CCode (cheader_filename = "jsc/jsc.h", cname = "jsc_value_new_function_variadic")]
+      static extern JSC.Value _jsc_value_new_function_variadic (JSC.Context context, string? name, owned CtorFactoryCb callback, GLib.Type return_type);
+
+      public static JSC.Value add_ctor_factory (JSC.Value ctor, JSC.Context context, string? name, owned CtorFactoryCb callback)
         {
-          unowned var destroy_notify = (GLib.DestroyNotify) Object.unref;
-          unowned var parent_class = (JSC.Class?) null;
-          unowned var vtable = (JSC.ClassVTable?) null;
 
-          name = name ?? @"$(jsc_klass.get_name ())Factory";
-
-          unowned var klass = (JSC.Class) context.register_class (name, parent_class, vtable, destroy_notify);
-
-          var instance = new Factory ();
-          var factory = new JSC.Value.object (context, (owned) instance, klass);
-
-          context.set_value (klass.get_name (), factory);
-        return klass;
+          var return_type = typeof (JSC.Value);
+          var factory_func = _jsc_value_new_function_variadic (context, name, (owned) callback, return_type);
+            ctor.object_set_property (name, factory_func);
+        return factory_func;
         }
 
       static string construct_signature (GLib.DBusArgInfo[] args)

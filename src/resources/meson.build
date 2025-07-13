@@ -15,18 +15,14 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
-gnome = import ('gnome')
-
-libresources = gnome.compile_resources \
-  (
-    'resources',
-    [ 'resources.xml' ],
-    source_dir: meson.current_source_dir () / '..'
-  )
-
 libresources_dep = declare_dependency \
   (
     dependencies: libgio_dep,
     include_directories: include_directories ('.'),
-    sources: libresources
-  )
+
+    sources: import ('gnome').compile_resources \
+      (
+        'resources',
+        [ 'resources.xml' ],
+        source_dir: meson.current_source_dir () / '..'
+  ))

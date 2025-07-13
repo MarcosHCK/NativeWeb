@@ -15,8 +15,8 @@
  * along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
  */
 import { Button, Group, Stack } from '@mantine/core'
-import { useEffect, useState } from 'react'
 import { PiExport, PiFloppyDisk, PiRocketLaunch } from 'react-icons/pi'
+import { useEffect, useState } from 'react'
 
 export default function Page ()
 {
@@ -27,8 +27,8 @@ export default function Page ()
 
   useEffect (() =>
     {
-      InterfaceFactory.create ().then (v => setObj (v))
-                                .catch (e => setNotice (e.toString ()))
+      Interface.create ().then (v => setObj (v))
+                         .catch (e => setNotice (e.toString ()))
     }, [])
 
   return ! obj
