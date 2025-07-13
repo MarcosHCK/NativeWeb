@@ -15,4 +15,5 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
-option ('developer', type : 'boolean', value : false, description : 'build with developer infrastructure')
+option ('developer', type: 'boolean', value: false, description: 'build with developer infrastructure')
+option ('examples', type: 'boolean', value: false, description: 'build example applications')

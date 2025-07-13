@@ -15,4 +15,6 @@
 # along with NativeWeb. If not, see <http://www.gnu.org/licenses/>.
 #
 
-subdir ('application')
+if get_option ('examples')
+       subdir ('application')
+endif
